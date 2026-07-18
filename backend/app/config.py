@@ -55,6 +55,14 @@ class Settings(BaseSettings):
     # FCM 推送（未配置时仅记录消息不实际发送）
     fcm_server_key: str = ""
 
+    # App 版本检查（与 Android versionName / versionCode 对齐）
+    app_latest_version: str = "1.0"
+    app_latest_version_code: int = 1
+    app_min_version_code: int = 1
+    app_download_url: str = "https://xq.dongme.me/downloads/shining-planet.apk"
+    app_update_message: str = "发现新版本，建议更新以获得更好体验"
+    app_force_update: bool = False
+
     class Config:
         env_file = str(_ENV_FILE)
         env_file_encoding = "utf-8"

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from .database import SessionLocal, init_db
-from .routers import auth, badges, community, energy, home, invitations, member, plans, push, reminders, rewards, tasks, user, wechat_auth
+from .routers import app_version, auth, badges, community, energy, home, invitations, member, plans, push, reminders, rewards, tasks, user, wechat_auth
 from .routers.admin import auth as admin_auth
 from .routers.admin import dashboard as admin_dashboard
 from .routers.admin import orders as admin_orders
@@ -23,6 +23,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(app_version.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
 app.include_router(user.router, prefix="/api")
 app.include_router(plans.router, prefix="/api")
