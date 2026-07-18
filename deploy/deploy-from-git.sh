@@ -3,12 +3,12 @@
 # 用法：bash /home/shareholder/laopo/deploy/deploy-from-git.sh
 set -euo pipefail
 
-# 公开仓库用 HTTPS；若改为私有，把 REPO_URL 换成 git@ 并配置 Deploy Key
-REPO_URL="https://github.com/langzixin2335/xingqiu.git"
+# SSH 拉取（服务器 HTTPS 到 GitHub 不稳定）；Deploy Key 需加到 xingqiu 仓库
+REPO_URL="git@github.com:langzixin2335/xingqiu.git"
 SRC_DIR="/home/shareholder/laopo"
 APP_DIR="/home/shareholder/shining-planet"
 BRANCH="main"
-export GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh -i $HOME/.ssh/laopo_github -o IdentitiesOnly=yes}"
+export GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh -i $HOME/.ssh/laopo_github -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new}"
 
 # Vite 8 需要 Node >= 20（优先使用 ~/.local/node）
 if [ -x "$HOME/.local/node/bin/node" ]; then
