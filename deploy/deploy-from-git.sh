@@ -3,8 +3,8 @@
 # 用法：bash /home/shareholder/laopo/deploy/deploy-from-git.sh
 set -euo pipefail
 
-# 私有仓库用 SSH + Deploy Key；公钥需加到 GitHub → Settings → Deploy keys
-REPO_URL="git@github.com:langzixin2335/laopo.git"
+# 公开仓库用 HTTPS；若改为私有，把 REPO_URL 换成 git@ 并配置 Deploy Key
+REPO_URL="https://github.com/langzixin2335/xingqiu.git"
 SRC_DIR="/home/shareholder/laopo"
 APP_DIR="/home/shareholder/shining-planet"
 BRANCH="main"
