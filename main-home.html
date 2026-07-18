@@ -1,0 +1,2918 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>闪耀星球 - 我的星际旅程</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0A0A0F;
+            --bg-card: #14141E;
+            --bg-card-hover: #1E1E2E;
+            --bg-input: #1A1A2E;
+            --text-primary: #F0E6D3;
+            --text-secondary: #A89B8C;
+            --text-muted: #6B5D4D;
+            --accent-gold: #D4B96A;
+            --accent-gold-light: #E8C55A;
+            --accent-gold-dark: #B89B4A;
+            --wood: #2D5A3D;
+            --wood-light: #4A8C5E;
+            --fire: #C23A2B;
+            --fire-light: #E85A4A;
+            --earth: #B8953F;
+            --earth-light: #D4B96A;
+            --metal: #8A7B6B;
+            --metal-light: #B5A89A;
+            --water: #1E3A5F;
+            --water-light: #3A6FA0;
+            --border: #2A2A3E;
+            --success: #4A8C5E;
+            --danger: #C23A2B;
+            --tab-active: #D4B96A;
+            --tab-inactive: #6B5D4D;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 星空背景 */
+        .starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0;
+            animation: twinkle var(--duration) ease-in-out infinite;
+            animation-delay: var(--delay);
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: var(--opacity); transform: scale(1); }
+        }
+
+        /* 页面容器 */
+        .page-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            margin: 0 auto;
+            min-height: 100vh;
+            padding: 24px 20px 100px;
+        }
+
+        /* 头部 */
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .brand-logo {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 12px;
+            color: var(--accent-gold);
+            letter-spacing: 4px;
+            margin-bottom: 12px;
+            opacity: 0.8;
+        }
+
+        .page-title {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+
+        .page-title span {
+            color: var(--accent-gold);
+        }
+
+        .page-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .divider {
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+            margin: 12px auto;
+        }
+
+        /* 人格标签 */
+        .personality-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: var(--bg-card);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .personality-tag img {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .personality-tag span {
+            font-size: 13px;
+            color: var(--accent-gold);
+        }
+
+        /* 卡片样式 */
+        .card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .card-title {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title .icon {
+            font-size: 20px;
+        }
+
+        .card-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        /* Tab内容区域 */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ========== 计划进度 Tab ========== */
+        .planet-orbit {
+            position: relative;
+            width: 100%;
+            height: 420px;
+            margin: 20px 0;
+        }
+
+        .planet {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+        }
+
+        .planet-body {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            position: relative;
+            transition: all 0.4s ease;
+            border: 2px solid transparent;
+        }
+
+        .planet-body::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            opacity: 0.3;
+            filter: blur(8px);
+            z-index: -1;
+        }
+
+        /* 生存星球 - 绿色星球 */
+        .planet-survival .planet-body {
+            background: linear-gradient(135deg, #2D5A3D, #4A8C5E);
+            box-shadow: 0 0 20px rgba(45, 90, 61, 0.4), inset 0 -4px 8px rgba(0,0,0,0.3);
+        }
+        .planet-survival .planet-body::after {
+            background: #4A8C5E;
+        }
+        .planet-survival.active .planet-body {
+            box-shadow: 0 0 40px rgba(74, 140, 94, 0.6), inset 0 -4px 8px rgba(0,0,0,0.3);
+            border-color: rgba(74, 140, 94, 0.8);
+        }
+
+        /* 赚钱星球 - 红色星球 */
+        .planet-money .planet-body {
+            background: linear-gradient(135deg, #8B2500, #E85A4A);
+            box-shadow: 0 0 20px rgba(194, 58, 43, 0.4), inset 0 -4px 8px rgba(0,0,0,0.3);
+        }
+        .planet-money .planet-body::after {
+            background: #E85A4A;
+        }
+        .planet-money.active .planet-body {
+            box-shadow: 0 0 40px rgba(232, 90, 74, 0.6), inset 0 -4px 8px rgba(0,0,0,0.3);
+            border-color: rgba(232, 90, 74, 0.8);
+        }
+
+        /* 好看星球 - 金色星球 */
+        .planet-beauty .planet-body {
+            background: linear-gradient(135deg, #B8953F, #E8C55A);
+            box-shadow: 0 0 20px rgba(184, 149, 63, 0.4), inset 0 -4px 8px rgba(0,0,0,0.3);
+        }
+        .planet-beauty .planet-body::after {
+            background: #E8C55A;
+        }
+        .planet-beauty.active .planet-body {
+            box-shadow: 0 0 40px rgba(232, 197, 90, 0.6), inset 0 -4px 8px rgba(0,0,0,0.3);
+            border-color: rgba(232, 197, 90, 0.8);
+        }
+
+        /* 好玩星球 - 银色星球 */
+        .planet-fun .planet-body {
+            background: linear-gradient(135deg, #6B5D4D, #B5A89A);
+            box-shadow: 0 0 20px rgba(138, 123, 107, 0.4), inset 0 -4px 8px rgba(0,0,0,0.3);
+        }
+        .planet-fun .planet-body::after {
+            background: #B5A89A;
+        }
+        .planet-fun.active .planet-body {
+            box-shadow: 0 0 40px rgba(181, 168, 154, 0.6), inset 0 -4px 8px rgba(0,0,0,0.3);
+            border-color: rgba(181, 168, 154, 0.8);
+        }
+
+        /* 心流星球 - 蓝色星球 */
+        .planet-flow .planet-body {
+            background: linear-gradient(135deg, #1E3A5F, #3A6FA0);
+            box-shadow: 0 0 20px rgba(30, 58, 95, 0.4), inset 0 -4px 8px rgba(0,0,0,0.3);
+        }
+        .planet-flow .planet-body::after {
+            background: #3A6FA0;
+        }
+        .planet-flow.active .planet-body {
+            box-shadow: 0 0 40px rgba(58, 111, 160, 0.6), inset 0 -4px 8px rgba(0,0,0,0.3);
+            border-color: rgba(58, 111, 160, 0.8);
+        }
+
+        .planet-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .planet-level {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .planet-task {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: var(--bg-dark);
+            color: var(--text-muted);
+            text-align: center;
+            max-width: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .planet.active .planet-name {
+            color: var(--text-primary);
+        }
+
+        .planet.active .planet-task {
+            background: rgba(212, 185, 106, 0.2);
+            color: var(--accent-gold);
+        }
+
+        .planet.inactive .planet-body {
+            opacity: 0.4;
+            filter: grayscale(0.6);
+        }
+
+        .planet.inactive .planet-name,
+        .planet.inactive .planet-level,
+        .planet.inactive .planet-task {
+            opacity: 0.5;
+        }
+
+        /* 星球轨道线（装饰） */
+        .orbit-line {
+            position: absolute;
+            border: 1px dashed rgba(212, 185, 106, 0.1);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* 今日任务列表 */
+        .today-tasks {
+            margin-top: 8px;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            background: var(--bg-input);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .task-item:hover {
+            border-color: var(--accent-gold-dark);
+        }
+
+        .task-checkbox {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            font-size: 12px;
+            color: transparent;
+        }
+
+        .task-checkbox.checked {
+            background: var(--accent-gold);
+            border-color: var(--accent-gold);
+            color: var(--bg-dark);
+        }
+
+        .task-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .task-title {
+            font-size: 14px;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .task-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .task-tag {
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+
+        .task-tag.survival { background: rgba(45, 90, 61, 0.2); color: var(--wood-light); }
+        .task-tag.money { background: rgba(194, 58, 43, 0.2); color: var(--fire-light); }
+        .task-tag.beauty { background: rgba(184, 149, 63, 0.2); color: var(--earth-light); }
+        .task-tag.fun { background: rgba(138, 123, 107, 0.2); color: var(--metal-light); }
+        .task-tag.flow { background: rgba(30, 58, 95, 0.2); color: var(--water-light); }
+
+        /* 任务操作按钮 */
+        .task-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .task-action-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--bg-input);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        .task-action-btn:hover {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        .task-action-btn.invite {
+            width: auto;
+            height: 26px;
+            padding: 0 10px;
+            border-radius: 13px;
+            font-size: 11px;
+            border-color: rgba(212, 185, 106, 0.4);
+            background: rgba(212, 185, 106, 0.08);
+            color: var(--accent-gold);
+            white-space: nowrap;
+        }
+
+        .task-action-btn.invite:hover {
+            background: rgba(212, 185, 106, 0.18);
+            border-color: var(--accent-gold);
+        }
+
+        .task-action-btn.camera {
+            background: rgba(212, 185, 106, 0.1);
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        .task-action-btn.camera:hover {
+            background: rgba(212, 185, 106, 0.2);
+        }
+
+        /* 拍照上传区域 */
+        .photo-upload-area {
+            display: none;
+            padding: 12px;
+            background: var(--bg-input);
+            border-radius: 10px;
+            margin-top: 10px;
+            border: 2px dashed var(--border);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .photo-upload-area:hover {
+            border-color: var(--accent-gold);
+            background: rgba(212, 185, 106, 0.05);
+        }
+
+        .photo-upload-area.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .photo-upload-area .camera-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .photo-upload-area .upload-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .photo-upload-area .upload-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* 鼓励反馈 */
+        .encourage-feedback {
+            display: none;
+            padding: 10px 14px;
+            background: linear-gradient(135deg, rgba(212, 185, 106, 0.15), rgba(30, 58, 95, 0.1));
+            border-radius: 10px;
+            margin-top: 10px;
+            border: 1px solid rgba(212, 185, 106, 0.3);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .encourage-feedback.show {
+            display: block;
+        }
+
+        .encourage-feedback .feedback-icon {
+            font-size: 18px;
+            margin-right: 6px;
+        }
+
+        .encourage-feedback .feedback-text {
+            font-size: 13px;
+            color: var(--accent-gold);
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        /* 完成动画 */
+        .task-item.completed .task-title {
+            text-decoration: line-through;
+            opacity: 0.5;
+        }
+
+        .task-item.completed .task-meta {
+            opacity: 0.5;
+        }
+
+        /* ========== 能量中心 Tab ========== */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .product-card {
+            background: var(--bg-input);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .product-card:hover {
+            border-color: var(--accent-gold-dark);
+            transform: translateY(-2px);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 100px;
+            background: linear-gradient(135deg, var(--bg-card-hover), var(--bg-input));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }
+
+        .product-info {
+            padding: 12px;
+        }
+
+        .product-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .product-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .product-price {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--accent-gold);
+        }
+
+        .product-price .original {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-decoration: line-through;
+            margin-left: 4px;
+            font-weight: 400;
+        }
+
+        .add-btn {
+            width: 100%;
+            padding: 8px;
+            background: rgba(212, 185, 106, 0.1);
+            border: 1px solid var(--accent-gold);
+            border-radius: 8px;
+            color: var(--accent-gold);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 8px;
+        }
+
+        .add-btn:hover {
+            background: rgba(212, 185, 106, 0.2);
+        }
+
+        .add-btn.added {
+            background: var(--accent-gold);
+            color: var(--bg-dark);
+        }
+
+        /* 二级分类标签 */
+        .subcategory-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .subcategory-tab {
+            padding: 6px 14px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+
+        .subcategory-tab:hover {
+            border-color: var(--accent-gold-dark);
+        }
+
+        .subcategory-tab.active {
+            background: rgba(212, 185, 106, 0.15);
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        /* 产品标签 */
+        .product-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            z-index: 2;
+        }
+
+        .product-badge.vip-free {
+            background: linear-gradient(135deg, var(--accent-gold-dark), var(--accent-gold));
+            color: var(--bg-dark);
+        }
+
+        .product-badge.limited-free {
+            background: linear-gradient(135deg, #C23A2B, #E85A4A);
+            color: white;
+        }
+
+        .product-card {
+            position: relative;
+        }
+
+        /* 分类标签 */
+        .category-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .category-tab {
+            padding: 8px 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+
+        .category-tab:hover {
+            border-color: var(--accent-gold-dark);
+        }
+
+        .category-tab.active {
+            background: rgba(212, 185, 106, 0.15);
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        /* ========== 奖励中心 Tab ========== */
+        .progress-ring {
+            width: 120px;
+            height: 120px;
+            position: relative;
+            margin: 0 auto 16px;
+        }
+
+        .progress-ring svg {
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring-bg {
+            fill: none;
+            stroke: var(--bg-input);
+            stroke-width: 8;
+        }
+
+        .progress-ring-fill {
+            fill: none;
+            stroke: var(--accent-gold);
+            stroke-width: 8;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s ease;
+        }
+
+        .progress-ring-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .progress-ring-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent-gold);
+            font-family: 'Noto Serif SC', serif;
+        }
+
+        .progress-ring-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* 各维度进度 */
+        .dimension-progress {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .dimension-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .dimension-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .dimension-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .dimension-name {
+            font-size: 13px;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .dimension-level {
+            font-size: 11px;
+            color: var(--accent-gold);
+        }
+
+        .dimension-bar {
+            height: 6px;
+            background: var(--bg-input);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .dimension-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 1s ease;
+        }
+
+        .dimension-bar-fill.survival { background: linear-gradient(90deg, #2D5A3D, #4A8C5E); }
+        .dimension-bar-fill.money { background: linear-gradient(90deg, #8B2500, #E85A4A); }
+        .dimension-bar-fill.beauty { background: linear-gradient(90deg, #B8953F, #E8C55A); }
+        .dimension-bar-fill.fun { background: linear-gradient(90deg, #6B5D4D, #B5A89A); }
+        .dimension-bar-fill.flow { background: linear-gradient(90deg, #1E3A5F, #3A6FA0); }
+
+        /* 勋章区域 */
+        .badge-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .badge-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 12px 8px;
+            background: var(--bg-input);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .badge-item.unlocked {
+            border-color: var(--accent-gold);
+            background: rgba(212, 185, 106, 0.1);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .badge-item.unlocked:hover {
+            background: rgba(212, 185, 106, 0.18);
+            transform: translateY(-2px);
+        }
+
+        .badge-item.unlocked.displayed {
+            border-color: var(--accent-gold);
+            background: rgba(212, 185, 106, 0.2);
+            box-shadow: 0 0 12px rgba(212, 185, 106, 0.2);
+        }
+
+        .badge-item.locked {
+            opacity: 0.5;
+        }
+
+        .badge-icon {
+            font-size: 28px;
+        }
+
+        .badge-name {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        /* 阶段奖励 */
+        .reward-input-area {
+            background: var(--bg-input);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+
+        .reward-input-area .input-field {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-family: inherit;
+            margin-bottom: 10px;
+            outline: none;
+        }
+
+        .reward-input-area .input-field:focus {
+            border-color: var(--accent-gold);
+        }
+
+        .reward-input-area .input-field::placeholder {
+            color: var(--text-muted);
+        }
+
+        textarea.input-field {
+            min-height: 60px;
+            resize: vertical;
+        }
+
+        /* ========== 会员中心 Tab ========== */
+        .member-card {
+            background: linear-gradient(135deg, rgba(212, 185, 106, 0.15), rgba(30, 58, 95, 0.1));
+            border: 1px solid var(--accent-gold);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .member-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: 2px solid var(--accent-gold);
+            margin: 0 auto 12px;
+            object-fit: cover;
+        }
+
+        .member-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .member-level {
+            font-size: 14px;
+            color: var(--accent-gold);
+            margin-bottom: 8px;
+        }
+
+        .member-expire {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        /* 会员等级对比卡片 */
+        .tier-card {
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            background: var(--bg-input);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tier-card.current {
+            border-color: var(--accent-gold);
+            background: linear-gradient(135deg, rgba(212, 185, 106, 0.08), rgba(30, 58, 95, 0.05));
+        }
+
+        .tier-card.recommended {
+            border-color: rgba(212, 185, 106, 0.5);
+        }
+
+        .tier-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 0 0 0 8px;
+        }
+
+        .tier-badge.current {
+            background: var(--accent-gold);
+            color: var(--bg-dark);
+        }
+
+        .tier-badge.recommended {
+            background: rgba(212, 185, 106, 0.2);
+            color: var(--accent-gold);
+        }
+
+        .tier-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .tier-icon {
+            font-size: 28px;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(212, 185, 106, 0.1);
+            flex-shrink: 0;
+        }
+
+        .tier-info {
+            flex: 1;
+        }
+
+        .tier-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .tier-price {
+            font-size: 14px;
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+
+        .tier-price .period {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        /* 权益进度条 */
+        .benefit-progress-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 12px 0;
+        }
+
+        .benefit-progress-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .benefit-progress-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(212, 185, 106, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .benefit-progress-bar-wrap {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .benefit-progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .benefit-progress-label .name {
+            color: var(--text-secondary);
+        }
+
+        .benefit-progress-label .status {
+            font-size: 11px;
+            padding: 1px 6px;
+            border-radius: 6px;
+        }
+
+        .benefit-progress-label .status.unlocked {
+            background: rgba(74, 140, 94, 0.2);
+            color: var(--wood-light);
+        }
+
+        .benefit-progress-label .status.locked {
+            background: var(--bg-dark);
+            color: var(--text-muted);
+        }
+
+        .benefit-progress-track {
+            height: 6px;
+            background: var(--bg-dark);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .benefit-progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 1s ease;
+        }
+
+        .benefit-progress-fill.unlocked {
+            background: linear-gradient(90deg, var(--accent-gold-dark), var(--accent-gold));
+        }
+
+        .benefit-progress-fill.locked {
+            background: linear-gradient(90deg, rgba(212, 185, 106, 0.3), rgba(212, 185, 106, 0.15));
+        }
+
+        /* 升级按钮 */
+        .upgrade-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 8px;
+        }
+
+        .upgrade-btn.primary {
+            background: linear-gradient(135deg, var(--accent-gold-dark), var(--accent-gold));
+            color: var(--bg-dark);
+        }
+
+        .upgrade-btn.primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .upgrade-btn.secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        .upgrade-btn.secondary:hover {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        .upgrade-price {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 6px;
+        }
+
+        /* 权益对比表 */
+        .compare-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+
+        .compare-table th,
+        .compare-table td {
+            padding: 10px 8px;
+            text-align: center;
+            font-size: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .compare-table th {
+            color: var(--accent-gold);
+            font-weight: 600;
+            background: rgba(212, 185, 106, 0.05);
+        }
+
+        .compare-table td:first-child {
+            text-align: left;
+            color: var(--text-secondary);
+        }
+
+        .compare-table .check {
+            color: var(--accent-gold);
+            font-size: 14px;
+        }
+
+        .compare-table .cross {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .compare-table .current-col {
+            background: rgba(212, 185, 106, 0.05);
+        }
+
+        /* 星球社区 */
+        .community-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 12px;
+        }
+
+        .community-post {
+            background: var(--bg-input);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .community-post:hover {
+            border-color: rgba(212, 185, 106, 0.2);
+        }
+
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .post-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(212, 185, 106, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .post-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .post-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .post-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .post-tag {
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .post-tag.survival { background: rgba(45, 90, 61, 0.2); color: #4a8c5e; }
+        .post-tag.money { background: rgba(194, 58, 43, 0.2); color: #e85a4a; }
+        .post-tag.beauty { background: rgba(184, 149, 63, 0.2); color: #e8c55a; }
+        .post-tag.fun { background: rgba(138, 123, 107, 0.2); color: #b5a89a; }
+        .post-tag.flow { background: rgba(30, 58, 95, 0.2); color: #3a6fa0; }
+
+        .post-content {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 16px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border);
+        }
+
+        .post-action {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 4px 0;
+        }
+
+        .post-action:hover {
+            color: var(--accent-gold);
+        }
+
+        .post-action.liked {
+            color: #e85a4a;
+        }
+
+        .post-action .action-icon {
+            font-size: 14px;
+        }
+
+        .post-action .action-count {
+            font-size: 12px;
+        }
+
+        .comment-section {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+
+        .comment-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .comment-item {
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .comment-user {
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+
+        .comment-text {
+            color: var(--text-secondary);
+        }
+
+        .comment-input-area {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .comment-input {
+            flex: 1;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 8px 14px;
+            color: var(--text-primary);
+            font-size: 12px;
+            outline: none;
+        }
+
+        .comment-input:focus {
+            border-color: var(--accent-gold);
+        }
+
+        .comment-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .comment-send {
+            background: transparent;
+            border: none;
+            color: var(--accent-gold);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 4px 8px;
+            white-space: nowrap;
+        }
+
+        .comment-send:hover {
+            opacity: 0.8;
+        }
+
+        /* 底部Tab导航 */
+        .bottom-tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, var(--bg-dark) 80%, rgba(10, 10, 15, 0.8));
+            border-top: 1px solid var(--border);
+            z-index: 100;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .tab-nav {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 8px 0;
+        }
+
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            background: none;
+            font-family: inherit;
+        }
+
+        .tab-item .tab-icon {
+            font-size: 22px;
+            transition: all 0.3s ease;
+        }
+
+        .tab-item .tab-label {
+            font-size: 11px;
+            color: var(--tab-inactive);
+            transition: all 0.3s ease;
+        }
+
+        .tab-item.active .tab-icon {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 6px rgba(212, 185, 106, 0.5));
+        }
+
+        .tab-item.active .tab-label {
+            color: var(--tab-active);
+            font-weight: 600;
+        }
+
+        .tab-item:not(.active):hover .tab-label {
+            color: var(--text-secondary);
+        }
+
+        /* 隐藏/显示 */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- 星空背景 -->
+    <div class="starfield" id="starfield"></div>
+
+    <div class="page-container">
+        <!-- 头部 -->
+        <div class="header">
+            <div class="brand-logo">✦ SHINING PLANET ✦</div>
+            <div class="page-title" id="pageTitle">我的<span>星际旅程</span></div>
+            <div class="page-subtitle" id="pageSubtitle">在闪耀星球，每一天都是成长</div>
+            <div class="divider"></div>
+        </div>
+
+        <!-- ========== Tab 1: 计划进度 ========== -->
+        <div class="tab-content active" id="tab-plan">
+            <!-- 五种时间星球 -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">🪐</span>
+                    我的五种时间星球
+                </div>
+                <div class="card-desc">点击星球查看详情，完成今日任务让星球更闪耀</div>
+                
+                <div class="planet-orbit" id="planetOrbit">
+                    <!-- 生存星球 - 左上 -->
+                    <div class="planet planet-survival active" style="left: 10%; top: 8%;" onclick="showPlanetDetail('survival')">
+                        <div class="planet-body">🌿</div>
+                        <div class="planet-name">生存星球</div>
+                        <div class="planet-level">Lv.3</div>
+                        <div class="planet-task">运动30分</div>
+                    </div>
+                    
+                    <!-- 赚钱星球 - 右上 -->
+                    <div class="planet planet-money active" style="left: 62%; top: 5%;" onclick="showPlanetDetail('money')">
+                        <div class="planet-body">💎</div>
+                        <div class="planet-name">赚钱星球</div>
+                        <div class="planet-level">Lv.5</div>
+                        <div class="planet-task">阅读1小时</div>
+                    </div>
+                    
+                    <!-- 好看星球 - 中上 -->
+                    <div class="planet planet-beauty active" style="left: 36%; top: 0%;" onclick="showPlanetDetail('beauty')">
+                        <div class="planet-body">✨</div>
+                        <div class="planet-name">好看星球</div>
+                        <div class="planet-level">Lv.2</div>
+                        <div class="planet-task">护肤打卡</div>
+                    </div>
+                    
+                    <!-- 好玩星球 - 左下 -->
+                    <div class="planet planet-fun inactive" style="left: 8%; top: 55%;" onclick="showPlanetDetail('fun')">
+                        <div class="planet-body">🎮</div>
+                        <div class="planet-name">好玩星球</div>
+                        <div class="planet-level">Lv.1</div>
+                        <div class="planet-task">暂无任务</div>
+                    </div>
+                    
+                    <!-- 心流星球 - 右下 -->
+                    <div class="planet planet-flow active" style="left: 60%; top: 50%;" onclick="showPlanetDetail('flow')">
+                        <div class="planet-body">🧘</div>
+                        <div class="planet-name">心流星球</div>
+                        <div class="planet-level">Lv.4</div>
+                        <div class="planet-task">冥想15分</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 今日任务清单 -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">📋</span>
+                    今日任务
+                    <span style="margin-left: auto; font-size: 13px; color: var(--text-muted);">3/5 完成</span>
+                </div>
+                <div class="card-desc">完成今日任务，点亮你的星球</div>
+                
+                <div class="today-tasks" id="todayTasks">
+                    <div class="task-item" data-task="1">
+                        <div class="task-checkbox checked" onclick="toggleTask(this)">✓</div>
+                        <div class="task-content">
+                            <div class="task-title">晨跑5公里</div>
+                            <div class="task-meta">07:00 · 已完成</div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="task-action-btn invite" onclick="shareTask('晨跑5公里')" title="发起邀约">发起邀约</button>
+                        </div>
+                        <div class="task-tag survival">生存</div>
+                    </div>
+                    
+                    <div class="task-item" data-task="2">
+                        <div class="task-checkbox checked" onclick="toggleTask(this)">✓</div>
+                        <div class="task-content">
+                            <div class="task-title">阅读《原则》30页</div>
+                            <div class="task-meta">08:30 · 已完成</div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="task-action-btn invite" onclick="shareTask('阅读《原则》30页')" title="发起邀约">发起邀约</button>
+                        </div>
+                        <div class="task-tag money">赚钱</div>
+                    </div>
+                    
+                    <div class="task-item" data-task="3">
+                        <div class="task-checkbox" onclick="toggleTask(this)"></div>
+                        <div class="task-content">
+                            <div class="task-title">晚间护肤流程</div>
+                            <div class="task-meta">21:00 · 待完成</div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="task-action-btn camera" onclick="openCamera(this)" title="拍照完成">📷</button>
+                            <button class="task-action-btn invite" onclick="shareTask('晚间护肤流程')" title="发起邀约">发起邀约</button>
+                        </div>
+                        <div class="task-tag beauty">好看</div>
+                        <div class="photo-upload-area" onclick="simulatePhotoUpload(this)">
+                            <div class="camera-icon">📷</div>
+                            <div class="upload-text">点击拍照或上传照片</div>
+                            <div class="upload-hint">完成任务后拍照记录，见证你的成长</div>
+                        </div>
+                        <div class="encourage-feedback">
+                            <span class="feedback-icon">✨</span>
+                            <span class="feedback-text" id="feedback-3">太棒了！你正在闪闪发光，继续保持！</span>
+                        </div>
+                    </div>
+                    
+                    <div class="task-item completed" data-task="4">
+                        <div class="task-checkbox checked" onclick="toggleTask(this)">✓</div>
+                        <div class="task-content">
+                            <div class="task-title">正念冥想15分钟</div>
+                            <div class="task-meta">06:00 · 已完成</div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="task-action-btn invite" onclick="shareTask('正念冥想15分钟')" title="发起邀约">发起邀约</button>
+                        </div>
+                        <div class="task-tag flow">心流</div>
+                    </div>
+                    
+                    <div class="task-item" data-task="5">
+                        <div class="task-checkbox" onclick="toggleTask(this)"></div>
+                        <div class="task-content">
+                            <div class="task-title">学习摄影技巧</div>
+                            <div class="task-meta">周末 · 待完成</div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="task-action-btn camera" onclick="openCamera(this)" title="拍照完成">📷</button>
+                            <button class="task-action-btn invite" onclick="shareTask('学习摄影技巧')" title="发起邀约">发起邀约</button>
+                        </div>
+                        <div class="task-tag fun">好玩</div>
+                        <div class="photo-upload-area" onclick="simulatePhotoUpload(this)">
+                            <div class="camera-icon">📷</div>
+                            <div class="upload-text">点击拍照或上传照片</div>
+                            <div class="upload-hint">完成任务后拍照记录，见证你的成长</div>
+                        </div>
+                        <div class="encourage-feedback">
+                            <span class="feedback-icon">🌟</span>
+                            <span class="feedback-text" id="feedback-5">每一次尝试都是成长，你比自己想象的更优秀！</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 星球社区 -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">🌍</span>
+                    星球社区
+                    <span style="margin-left: auto; font-size: 12px; color: var(--text-muted);">今日 12 条动态</span>
+                </div>
+                <div class="card-desc">看看其他星球居民今天的成长记录</div>
+
+                <div class="community-feed" id="communityFeed">
+                    <!-- 动态1 -->
+                    <div class="community-post">
+                        <div class="post-header">
+                            <div class="post-avatar">👩</div>
+                            <div class="post-info">
+                                <div class="post-name">小星星</div>
+                                <div class="post-meta">10分钟前 · 完成晨跑5公里</div>
+                            </div>
+                            <div class="post-tag survival">生存</div>
+                        </div>
+                        <div class="post-content">
+                            今天早起完成了5公里晨跑，感觉整个人都清醒了！坚持打卡第15天 💪
+                        </div>
+                        <div class="post-actions">
+                            <button class="post-action" onclick="likePost(this)">
+                                <span class="action-icon">❤️</span>
+                                <span class="action-count">8</span>
+                            </button>
+                            <button class="post-action" onclick="toggleComment(this)">
+                                <span class="action-icon">💬</span>
+                                <span class="action-count">3</span>
+                            </button>
+                            <button class="post-action" onclick="sharePost('小星星', '晨跑5公里')">
+                                <span class="action-icon">📤</span>
+                            </button>
+                        </div>
+                        <div class="comment-section" style="display: none;">
+                            <div class="comment-list">
+                                <div class="comment-item">
+                                    <span class="comment-user">月亮姐姐：</span>
+                                    <span class="comment-text">太厉害了！我也要早起跑步</span>
+                                </div>
+                                <div class="comment-item">
+                                    <span class="comment-user">阳光小子：</span>
+                                    <span class="comment-text">坚持15天，佩服！</span>
+                                </div>
+                            </div>
+                            <div class="comment-input-area">
+                                <input type="text" class="comment-input" placeholder="写下你的鼓励..." onkeypress="submitComment(event, this)">
+                                <button class="comment-send" onclick="sendComment(this)">发送</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 动态2 -->
+                    <div class="community-post">
+                        <div class="post-header">
+                            <div class="post-avatar">👧</div>
+                            <div class="post-info">
+                                <div class="post-name">书虫小美</div>
+                                <div class="post-meta">25分钟前 · 完成阅读《原则》30页</div>
+                            </div>
+                            <div class="post-tag money">赚钱</div>
+                        </div>
+                        <div class="post-content">
+                            今天读到达里奥的"极度透明"原则，深受启发。工作中的沟通确实需要更直接一些 📚
+                        </div>
+                        <div class="post-actions">
+                            <button class="post-action" onclick="likePost(this)">
+                                <span class="action-icon">❤️</span>
+                                <span class="action-count">12</span>
+                            </button>
+                            <button class="post-action" onclick="toggleComment(this)">
+                                <span class="action-icon">💬</span>
+                                <span class="action-count">5</span>
+                            </button>
+                            <button class="post-action" onclick="sharePost('书虫小美', '阅读《原则》')">
+                                <span class="action-icon">📤</span>
+                            </button>
+                        </div>
+                        <div class="comment-section" style="display: none;">
+                            <div class="comment-list">
+                                <div class="comment-item">
+                                    <span class="comment-user">阅读达人：</span>
+                                    <span class="comment-text">这本书我也在读，确实很有收获</span>
+                                </div>
+                            </div>
+                            <div class="comment-input-area">
+                                <input type="text" class="comment-input" placeholder="写下你的鼓励..." onkeypress="submitComment(event, this)">
+                                <button class="comment-send" onclick="sendComment(this)">发送</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 动态3 -->
+                    <div class="community-post">
+                        <div class="post-header">
+                            <div class="post-avatar">🧘</div>
+                            <div class="post-info">
+                                <div class="post-name">静心Lisa</div>
+                                <div class="post-meta">1小时前 · 完成正念冥想15分钟</div>
+                            </div>
+                            <div class="post-tag flow">心流</div>
+                        </div>
+                        <div class="post-content">
+                            冥想让我找到了内心的平静。每天15分钟，是给自己最好的礼物 🧘‍♀️✨
+                        </div>
+                        <div class="post-actions">
+                            <button class="post-action" onclick="likePost(this)">
+                                <span class="action-icon">❤️</span>
+                                <span class="action-count">15</span>
+                            </button>
+                            <button class="post-action" onclick="toggleComment(this)">
+                                <span class="action-icon">💬</span>
+                                <span class="action-count">2</span>
+                            </button>
+                            <button class="post-action" onclick="sharePost('静心Lisa', '正念冥想')">
+                                <span class="action-icon">📤</span>
+                            </button>
+                        </div>
+                        <div class="comment-section" style="display: none;">
+                            <div class="comment-list">
+                                <div class="comment-item">
+                                    <span class="comment-user">瑜伽爱好者：</span>
+                                    <span class="comment-text">同感！冥想改变了我很多</span>
+                                </div>
+                            </div>
+                            <div class="comment-input-area">
+                                <input type="text" class="comment-input" placeholder="写下你的鼓励..." onkeypress="submitComment(event, this)">
+                                <button class="comment-send" onclick="sendComment(this)">发送</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== Tab 2: 能量中心 ========== -->
+        <div class="tab-content" id="tab-energy">
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">⚡</span>
+                    能量补给站
+                </div>
+                <div class="card-desc">选择适合你的星球能量，加入计划自动追踪</div>
+                
+                <!-- 一级分类：五种时间星球 -->
+                <div class="category-tabs">
+                    <div class="category-tab active" onclick="selectCategory(this, 'all')">全部</div>
+                    <div class="category-tab" onclick="selectCategory(this, 'survival')">🌿 生存星球</div>
+                    <div class="category-tab" onclick="selectCategory(this, 'money')">💎 赚钱星球</div>
+                    <div class="category-tab" onclick="selectCategory(this, 'beauty')">✨ 好看星球</div>
+                    <div class="category-tab" onclick="selectCategory(this, 'fun')">🎮 好玩星球</div>
+                    <div class="category-tab" onclick="selectCategory(this, 'flow')">🧘 心流星球</div>
+                </div>
+
+                <!-- 二级分类：学习阶段 -->
+                <div class="subcategory-tabs">
+                    <div class="subcategory-tab active" onclick="selectSubcategory(this, 'recommended')">✨ 为你挑选</div>
+                    <div class="subcategory-tab" onclick="selectSubcategory(this, 'beginner')">🌱 新手入门</div>
+                    <div class="subcategory-tab" onclick="selectSubcategory(this, 'advanced')">🚀 进阶提升</div>
+                    <div class="subcategory-tab" onclick="selectSubcategory(this, 'special')">🎯 专项突破</div>
+                </div>
+
+                <div class="product-grid" id="productGrid">
+                    <!-- 为你挑选 -->
+                    <div class="product-card" data-category="survival" data-subcategory="recommended">
+                        <div class="product-badge vip-free">会员免费</div>
+                        <div class="product-image">🏃</div>
+                        <div class="product-info">
+                            <div class="product-name">21天运动养成课</div>
+                            <div class="product-desc">科学运动，打造健康体魄</div>
+                            <div class="product-price">¥199<span class="original">¥299</span></div>
+                            <button class="add-btn" onclick="addToPlan(this, '21天运动养成课')">加入计划</button>
+                        </div>
+                    </div>
+                    
+                    <div class="product-card" data-category="money" data-subcategory="recommended">
+                        <div class="product-badge limited-free">限时免费</div>
+                        <div class="product-image">📚</div>
+                        <div class="product-info">
+                            <div class="product-name">趁早时间管理课</div>
+                            <div class="product-desc">21天建立高效时间体系</div>
+                            <div class="product-price">¥199<span class="original">¥299</span></div>
+                            <button class="add-btn" onclick="addToPlan(this, '趁早时间管理课')">加入计划</button>
+                        </div>
+                    </div>
+                    
+                    <div class="product-card" data-category="flow" data-subcategory="recommended">
+                        <div class="product-badge vip-free">会员免费</div>
+                        <div class="product-image">🧘</div>
+                        <div class="product-info">
+                            <div class="product-name">正念冥想入门</div>
+                            <div class="product-desc">30天找回内心平静</div>
+                            <div class="product-price">¥149<span class="original">¥199</span></div>
+                            <button class="add-btn" onclick="addToPlan(this, '正念冥想入门')">加入计划</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 新手入门 -->
+                    <div class="product-card" data-category="survival" data-subcategory="beginner">
+                        <div class="product-badge vip-free">会员免费</div>
+                        <div class="product-image">🥗</div>
+                        <div class="product-info">
+                            <div class="product-name">营养饮食指南</div>
+                            <div class="product-desc">吃出健康好身材</div>
+                            <div class="product-price">¥89<span class="original">¥129</span></div>
+                            <button class="add-btn" onclick="addToPlan(this, '营养饮食指南')">加入计划</button>
+                        </div>
+                    </div>
+                    
+                    <div class="product-card" data-category="beauty" data-subcategory="beginner">
+                        <div class="product-badge limited-free">限时免费</div>
+                        <div class="product-image">📓</div>
+                        <div class="product-info">
+                            <div class="product-name">效率手册2026</div>
+                            <div class="product-desc">年度规划·每日追踪</div>
+                            <div class="product-price">¥89<span class="original">¥129</span></div>
+                            <button class="add-btn" onclick="addToPlan(this, '效率手册2026')">加入计划</button>
+                        </div>
+                    </div>
+                    
+                    <div class="product-card" data-category="fun" data-subcategory="beginner">
+                        <div class="product-badge vip-free">会员免费</div>
+                        <div class="product-image">📷</div>
+                        <div class="product-info">
+                            <div class="product-name">手机摄影课</div>
+                            <div class="product-desc">记录生活中的美好瞬间</div>
+                            <div class="product-price">¥149<span class="original">¥199</span></div>
+                            <button class="add-btn" onclick="addToPlan(this, '手机摄影课')">加入计划</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 进阶提升 -->
+                    <div class="product-card" data-category="money" data-subcategory="advanced">
+                        <div class="product-badge vip-free">会员免费</div>
+                        <div class="product-image">🎤</div>
+                        <div class="product-info">
+                            <div class="product-name">演讲表达训练营</div>
+                            <div class="product-desc">从紧张到自信的蜕变</div>
+                            <div class="product-price">¥399<span class="original">¥599</span></div>
+                            <button class="add-btn" onclick="addToPlan(this, '演讲表达训练营')">加入计划</button>
+                        </div>
+                    </div>
+                    
+                    <div class="product-card" data-category="beauty" data-subcategory="advanced">
+                        <div class="product-badge limited-free">限时免费</div>
+                        <div class="product-image">💄</div>
+                        <div class="product-info">
+                            <div class="product-name">形象管理课</div>
+                            <div class="product-desc">找到属于你的风格</div>
+                            <div class="product-price">¥249<span class="original">¥349</span></div>
+                            <button class="add-btn" onclick="addToPlan(this, '形象管理课')">加入计划</button>
+                        </div>
+                    </div>
+                    
+                    <div class="product-card" data-category="flow" data-subcategory="advanced">
+                        <div class="product-badge vip-free">会员免费</div>
+                        <div class="product-image">📖</div>
+                        <div class="product-info">
+                            <div class="product-name">晨间仪式套装</div>
+                            <div class="product-desc">开启美好一天的仪式感</div>
+                            <div class="product-price">¥159<span class="original">¥229</span></div>
+                            <button class="add-btn" onclick="addToPlan(this, '晨间仪式套装')">加入计划</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 专项突破 -->
+                    <div class="product-card" data-category="fun" data-subcategory="special">
+                        <div class="product-badge limited-free">限时免费</div>
+                        <div class="product-image">🎨</div>
+                        <div class="product-info">
+                            <div class="product-name">零基础绘画课</div>
+                            <div class="product-desc">释放创造力的快乐</div>
+                            <div class="product-price">¥179<span class="original">¥259</span></div>
+                            <button class="add-btn" onclick="addToPlan(this, '零基础绘画课')">加入计划</button>
+                        </div>
+                    </div>
+                    
+                    <div class="product-card" data-category="money" data-subcategory="special">
+                        <div class="product-badge vip-free">会员免费</div>
+                        <div class="product-image">💼</div>
+                        <div class="product-info">
+                            <div class="product-name">职场沟通术</div>
+                            <div class="product-desc">高效沟通，事半功倍</div>
+                            <div class="product-price">¥299<span class="original">¥399</span></div>
+                            <button class="add-btn" onclick="addToPlan(this, '职场沟通术')">加入计划</button>
+                        </div>
+                    </div>
+                    
+                    <div class="product-card" data-category="survival" data-subcategory="special">
+                        <div class="product-badge limited-free">限时免费</div>
+                        <div class="product-image">😴</div>
+                        <div class="product-info">
+                            <div class="product-name">优质睡眠课</div>
+                            <div class="product-desc">告别失眠，睡出好状态</div>
+                            <div class="product-price">¥129<span class="original">¥199</span></div>
+                            <button class="add-btn" onclick="addToPlan(this, '优质睡眠课')">加入计划</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== Tab 3: 奖励中心 ========== -->
+        <div class="tab-content" id="tab-reward">
+            <!-- 总体进度 -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">🏆</span>
+                    成长总览
+                </div>
+                <div class="card-desc">距离目标达成还有 42 天，继续加油！</div>
+
+                <div class="progress-ring">
+                    <svg width="120" height="120" viewBox="0 0 120 120">
+                        <circle class="progress-ring-bg" cx="60" cy="60" r="52"/>
+                        <circle class="progress-ring-fill" cx="60" cy="60" r="52"
+                            stroke-dasharray="326.73" stroke-dashoffset="98" id="progressRing"/>
+                    </svg>
+                    <div class="progress-ring-text">
+                        <div class="progress-ring-value">70%</div>
+                        <div class="progress-ring-label">目标总进度</div>
+                    </div>
+                </div>
+
+                <div class="dimension-progress">
+                    <div class="dimension-item">
+                        <div class="dimension-icon" style="background: rgba(45, 90, 61, 0.2);">🌿</div>
+                        <div class="dimension-info">
+                            <div class="dimension-name">
+                                生存星球
+                                <span class="dimension-level">目标已完成 60%</span>
+                            </div>
+                            <div class="dimension-bar">
+                                <div class="dimension-bar-fill survival" style="width: 60%"></div>
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">距离目标达成还有 12 天</div>
+                        </div>
+                    </div>
+
+                    <div class="dimension-item">
+                        <div class="dimension-icon" style="background: rgba(194, 58, 43, 0.2);">💎</div>
+                        <div class="dimension-info">
+                            <div class="dimension-name">
+                                赚钱星球
+                                <span class="dimension-level">目标已完成 85%</span>
+                            </div>
+                            <div class="dimension-bar">
+                                <div class="dimension-bar-fill money" style="width: 85%"></div>
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">距离目标达成还有 5 天</div>
+                        </div>
+                    </div>
+
+                    <div class="dimension-item">
+                        <div class="dimension-icon" style="background: rgba(184, 149, 63, 0.2);">✨</div>
+                        <div class="dimension-info">
+                            <div class="dimension-name">
+                                好看星球
+                                <span class="dimension-level">目标已完成 40%</span>
+                            </div>
+                            <div class="dimension-bar">
+                                <div class="dimension-bar-fill beauty" style="width: 40%"></div>
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">距离目标达成还有 18 天</div>
+                        </div>
+                    </div>
+
+                    <div class="dimension-item">
+                        <div class="dimension-icon" style="background: rgba(138, 123, 107, 0.2);">🎮</div>
+                        <div class="dimension-info">
+                            <div class="dimension-name">
+                                好玩星球
+                                <span class="dimension-level">目标已完成 20%</span>
+                            </div>
+                            <div class="dimension-bar">
+                                <div class="dimension-bar-fill fun" style="width: 20%"></div>
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">距离目标达成还有 24 天</div>
+                        </div>
+                    </div>
+
+                    <div class="dimension-item">
+                        <div class="dimension-icon" style="background: rgba(30, 58, 95, 0.2);">🧘</div>
+                        <div class="dimension-info">
+                            <div class="dimension-name">
+                                心流星球
+                                <span class="dimension-level">目标已完成 75%</span>
+                            </div>
+                            <div class="dimension-bar">
+                                <div class="dimension-bar-fill flow" style="width: 75%"></div>
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">距离目标达成还有 8 天</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 每日行动完成曲线 -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">📈</span>
+                    每日行动完成曲线
+                </div>
+                <div class="card-desc">近7天行动完成情况</div>
+
+                <div class="chart-container" style="margin-top: 16px; height: 160px; position: relative;">
+                    <canvas id="completionChart" width="320" height="160" style="width: 100%; height: 100%;"></canvas>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 8px; padding: 0 8px;">
+                    <span style="font-size: 11px; color: var(--text-muted);">周一</span>
+                    <span style="font-size: 11px; color: var(--text-muted);">周二</span>
+                    <span style="font-size: 11px; color: var(--text-muted);">周三</span>
+                    <span style="font-size: 11px; color: var(--text-muted);">周四</span>
+                    <span style="font-size: 11px; color: var(--text-muted);">周五</span>
+                    <span style="font-size: 11px; color: var(--text-muted);">周六</span>
+                    <span style="font-size: 11px; color: var(--text-muted);">周日</span>
+                </div>
+            </div>
+
+            <!-- 勋章墙 -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">🎖️</span>
+                    勋章墙
+                </div>
+                <div class="card-desc">解锁成就，记录你的每一个里程碑。点击已解锁勋章可设置展示在头像旁（最多2个）</div>
+
+                <div class="badge-grid" id="badgeGrid">
+                    <div class="badge-item unlocked" onclick="toggleBadgeDisplay(this, '🔥', '连续7天')">
+                        <div class="badge-icon">🔥</div>
+                        <div class="badge-name">连续7天</div>
+                        <div class="badge-display-indicator" style="display: none;">👤</div>
+                    </div>
+                    <div class="badge-item unlocked" onclick="toggleBadgeDisplay(this, '⭐', '早起达人')">
+                        <div class="badge-icon">⭐</div>
+                        <div class="badge-name">早起达人</div>
+                        <div class="badge-display-indicator" style="display: none;">👤</div>
+                    </div>
+                    <div class="badge-item unlocked" onclick="toggleBadgeDisplay(this, '📚', '阅读之星')">
+                        <div class="badge-icon">📚</div>
+                        <div class="badge-name">阅读之星</div>
+                        <div class="badge-display-indicator" style="display: none;">👤</div>
+                    </div>
+                    <div class="badge-item locked">
+                        <div class="badge-icon">🏃</div>
+                        <div class="badge-name">运动健将</div>
+                    </div>
+                    <div class="badge-item locked">
+                        <div class="badge-icon">🎯</div>
+                        <div class="badge-name">目标达成</div>
+                    </div>
+                    <div class="badge-item locked">
+                        <div class="badge-icon">👑</div>
+                        <div class="badge-name">星球女王</div>
+                    </div>
+                    <div class="badge-item locked">
+                        <div class="badge-icon">💎</div>
+                        <div class="badge-name">智慧宝石</div>
+                    </div>
+                    <div class="badge-item locked">
+                        <div class="badge-icon">🌟</div>
+                        <div class="badge-name">闪耀之星</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 阶段奖励 -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">🎁</span>
+                    阶段奖励
+                </div>
+                <div class="card-desc">为自己设置奖励，让成长更有动力</div>
+                
+                <div class="reward-input-area">
+                    <input type="text" class="input-field" placeholder="奖励名称（例如：买一件新衣服）" id="rewardName">
+                    <textarea class="input-field" placeholder="奖励描述或产品链接..." id="rewardDesc"></textarea>
+                    <div class="form-row" style="display: flex; gap: 10px; margin-bottom: 0;">
+                        <select class="input-field" style="margin-bottom: 0; flex: 1;">
+                            <option>达成条件</option>
+                            <option>连续打卡7天</option>
+                            <option>连续打卡21天</option>
+                            <option>连续打卡30天</option>
+                            <option>升一级</option>
+                        </select>
+                        <button class="add-btn" style="margin-top: 0; width: auto; padding: 10px 20px;" onclick="addReward()">添加奖励</button>
+                    </div>
+                </div>
+
+                <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 10px;" id="rewardList">
+                    <div class="task-item">
+                        <div class="task-content">
+                            <div class="task-title">买一件新衣服</div>
+                            <div class="task-meta">连续打卡7天解锁</div>
+                        </div>
+                        <div class="task-tag" style="background: rgba(212, 185, 106, 0.2); color: var(--accent-gold);">进行中</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== Tab 4: 会员中心 ========== -->
+        <div class="tab-content" id="tab-member">
+            <!-- 会员卡片 -->
+            <div class="member-card">
+                <div class="member-avatar" style="display: flex; align-items: center; justify-content: center; font-size: 28px; background: rgba(212, 185, 106, 0.15);">👤</div>
+                <div class="member-name" id="memberName">闪耀星球居民</div>
+                <div class="member-level" id="memberLevel">🌟 星耀会员</div>
+                <div class="member-expire">有效期至：2026年12月31日</div>
+            </div>
+
+            <!-- 当前会员权益解锁进度 -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">🔓</span>
+                    我的权益解锁进度
+                </div>
+                <div class="card-desc">星耀会员已解锁 4/6 项权益</div>
+
+                <div class="benefit-progress-list">
+                    <div class="benefit-progress-item">
+                        <div class="benefit-progress-icon">🤖</div>
+                        <div class="benefit-progress-bar-wrap">
+                            <div class="benefit-progress-label">
+                                <span class="name">AI专属计划</span>
+                                <span class="status unlocked">已解锁</span>
+                            </div>
+                            <div class="benefit-progress-track">
+                                <div class="benefit-progress-fill unlocked" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="benefit-progress-item">
+                        <div class="benefit-progress-icon">📊</div>
+                        <div class="benefit-progress-bar-wrap">
+                            <div class="benefit-progress-label">
+                                <span class="name">深度数据分析</span>
+                                <span class="status unlocked">已解锁</span>
+                            </div>
+                            <div class="benefit-progress-track">
+                                <div class="benefit-progress-fill unlocked" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="benefit-progress-item">
+                        <div class="benefit-progress-icon">👥</div>
+                        <div class="benefit-progress-bar-wrap">
+                            <div class="benefit-progress-label">
+                                <span class="name">专属社群</span>
+                                <span class="status unlocked">已解锁</span>
+                            </div>
+                            <div class="benefit-progress-track">
+                                <div class="benefit-progress-fill unlocked" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="benefit-progress-item">
+                        <div class="benefit-progress-icon">🎁</div>
+                        <div class="benefit-progress-bar-wrap">
+                            <div class="benefit-progress-label">
+                                <span class="name">会员专属折扣</span>
+                                <span class="status unlocked">已解锁</span>
+                            </div>
+                            <div class="benefit-progress-track">
+                                <div class="benefit-progress-fill unlocked" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="benefit-progress-item">
+                        <div class="benefit-progress-icon">🏆</div>
+                        <div class="benefit-progress-bar-wrap">
+                            <div class="benefit-progress-label">
+                                <span class="name">线下活动报名参与权</span>
+                                <span class="status locked">待解锁</span>
+                            </div>
+                            <div class="benefit-progress-track">
+                                <div class="benefit-progress-fill locked" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="benefit-progress-item">
+                        <div class="benefit-progress-icon">🌟</div>
+                        <div class="benefit-progress-bar-wrap">
+                            <div class="benefit-progress-label">
+                                <span class="name">1对1成长顾问</span>
+                                <span class="status locked">待解锁</span>
+                            </div>
+                            <div class="benefit-progress-track">
+                                <div class="benefit-progress-fill locked" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 会员等级对比 -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">💎</span>
+                    会员等级
+                </div>
+                <div class="card-desc">选择适合你的成长方案</div>
+
+                <!-- 萌芽会员 -->
+                <div class="tier-card">
+                    <div class="tier-header">
+                        <div class="tier-icon">🌱</div>
+                        <div class="tier-info">
+                            <div class="tier-name">萌芽会员</div>
+                            <div class="tier-price">¥87 <span class="period">/ 季度</span></div>
+                        </div>
+                    </div>
+                    <div class="benefit-progress-list">
+                        <div class="benefit-progress-item">
+                            <div class="benefit-progress-bar-wrap">
+                                <div class="benefit-progress-label">
+                                    <span class="name">AI计划生成（每季度9次）</span>
+                                    <span class="status unlocked">✓</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="benefit-progress-item">
+                            <div class="benefit-progress-bar-wrap">
+                                <div class="benefit-progress-label">
+                                    <span class="name">基础成长报告</span>
+                                    <span class="status unlocked">✓</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="benefit-progress-item">
+                            <div class="benefit-progress-bar-wrap">
+                                <div class="benefit-progress-label">
+                                    <span class="name">能量中心9.5折</span>
+                                    <span class="status unlocked">✓</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="upgrade-btn secondary" onclick="showUpgradeInfo('萌芽')">查看详情</button>
+                </div>
+
+                <!-- 星耀会员（当前） -->
+                <div class="tier-card current">
+                    <div class="tier-badge current">当前</div>
+                    <div class="tier-header">
+                        <div class="tier-icon">🌟</div>
+                        <div class="tier-info">
+                            <div class="tier-name">星耀会员</div>
+                            <div class="tier-price">¥297 <span class="period">/ 季度</span></div>
+                        </div>
+                    </div>
+                    <div class="benefit-progress-list">
+                        <div class="benefit-progress-item">
+                            <div class="benefit-progress-bar-wrap">
+                                <div class="benefit-progress-label">
+                                    <span class="name">AI专属计划（无限次）</span>
+                                    <span class="status unlocked">✓</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="benefit-progress-item">
+                            <div class="benefit-progress-bar-wrap">
+                                <div class="benefit-progress-label">
+                                    <span class="name">深度数据分析</span>
+                                    <span class="status unlocked">✓</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="benefit-progress-item">
+                            <div class="benefit-progress-bar-wrap">
+                                <div class="benefit-progress-label">
+                                    <span class="name">专属成长社群</span>
+                                    <span class="status unlocked">✓</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="benefit-progress-item">
+                            <div class="benefit-progress-bar-wrap">
+                                <div class="benefit-progress-label">
+                                    <span class="name">能量中心9折</span>
+                                    <span class="status unlocked">✓</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 星球女王（推荐升级） -->
+                <div class="tier-card recommended">
+                    <div class="tier-badge recommended">推荐升级</div>
+                    <div class="tier-header">
+                        <div class="tier-icon">👑</div>
+                        <div class="tier-info">
+                            <div class="tier-name">星球女王</div>
+                            <div class="tier-price">¥897 <span class="period">/ 季度</span></div>
+                        </div>
+                    </div>
+                    <div class="benefit-progress-list">
+                        <div class="benefit-progress-item">
+                            <div class="benefit-progress-bar-wrap">
+                                <div class="benefit-progress-label">
+                                    <span class="name">星耀会员全部权益</span>
+                                    <span class="status unlocked">✓</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="benefit-progress-item">
+                            <div class="benefit-progress-bar-wrap">
+                                <div class="benefit-progress-label">
+                                    <span class="name">线下活动报名参与权</span>
+                                    <span class="status unlocked">✓</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="benefit-progress-item">
+                            <div class="benefit-progress-bar-wrap">
+                                <div class="benefit-progress-label">
+                                    <span class="name">1对1成长顾问（季度）</span>
+                                    <span class="status unlocked">✓</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="benefit-progress-item">
+                            <div class="benefit-progress-bar-wrap">
+                                <div class="benefit-progress-label">
+                                    <span class="name">能量中心8.5折</span>
+                                    <span class="status unlocked">✓</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="upgrade-btn primary" onclick="upgradeTier('星球女王')">补差价升级 ¥600/季度</button>
+                    <div class="upgrade-price">当前星耀会员剩余有效期可抵扣</div>
+                </div>
+            </div>
+
+            <!-- 权益对比表 -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">📊</span>
+                    权益对比
+                </div>
+                <div class="card-desc">一目了然，选择最适合你的方案</div>
+
+                <table class="compare-table">
+                    <thead>
+                        <tr>
+                            <th>权益项目</th>
+                            <th>萌芽</th>
+                            <th class="current-col">星耀</th>
+                            <th>女王</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>AI计划生成</td>
+                            <td><span class="check">✓</span> 9次/季</td>
+                            <td class="current-col"><span class="check">✓</span> 无限</td>
+                            <td><span class="check">✓</span> 无限</td>
+                        </tr>
+                        <tr>
+                            <td>成长报告</td>
+                            <td><span class="check">✓</span> 基础</td>
+                            <td class="current-col"><span class="check">✓</span> 深度</td>
+                            <td><span class="check">✓</span> 深度</td>
+                        </tr>
+                        <tr>
+                            <td>专属社群</td>
+                            <td><span class="cross">—</span></td>
+                            <td class="current-col"><span class="check">✓</span></td>
+                            <td><span class="check">✓</span></td>
+                        </tr>
+                        <tr>
+                            <td>能量中心折扣</td>
+                            <td><span class="check">✓</span> 9.5折</td>
+                            <td class="current-col"><span class="check">✓</span> 9折</td>
+                            <td><span class="check">✓</span> 8.5折</td>
+                        </tr>
+                        <tr>
+                            <td>线下活动报名</td>
+                            <td><span class="cross">—</span></td>
+                            <td class="current-col"><span class="cross">—</span></td>
+                            <td><span class="check">✓</span></td>
+                        </tr>
+                        <tr>
+                            <td>1对1成长顾问</td>
+                            <td><span class="cross">—</span></td>
+                            <td class="current-col"><span class="cross">—</span></td>
+                            <td><span class="check">✓</span> 季度</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部Tab导航 -->
+    <div class="bottom-tab-bar">
+        <div class="tab-nav">
+            <button class="tab-item active" onclick="switchTab('plan')">
+                <span class="tab-icon">🪐</span>
+                <span class="tab-label">计划进度</span>
+            </button>
+            <button class="tab-item" onclick="switchTab('energy')">
+                <span class="tab-icon">⚡</span>
+                <span class="tab-label">能量中心</span>
+            </button>
+            <button class="tab-item" onclick="switchTab('reward')">
+                <span class="tab-icon">🏆</span>
+                <span class="tab-label">奖励中心</span>
+            </button>
+            <button class="tab-item" onclick="switchTab('member')">
+                <span class="tab-icon">👤</span>
+                <span class="tab-label">会员中心</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 生成星空
+        function createStarfield() {
+            const starfield = document.getElementById('starfield');
+            const starCount = 80;
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
+                star.style.setProperty('--delay', Math.random() * 5 + 's');
+                star.style.setProperty('--opacity', Math.random() * 0.8 + 0.2);
+                starfield.appendChild(star);
+            }
+        }
+
+        // 切换Tab
+        function switchTab(tabName) {
+            // 隐藏所有tab内容
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // 显示目标tab
+            document.getElementById('tab-' + tabName).classList.add('active');
+            
+            // 更新tab按钮状态
+            document.querySelectorAll('.tab-item').forEach(el => {
+                el.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            // 更新页面标题
+            const titles = {
+                'plan': '我的<span>星际旅程</span>',
+                'energy': '能量<span>补给站</span>',
+                'reward': '成长<span>奖励中心</span>',
+                'member': '会员<span>中心</span>'
+            };
+            document.getElementById('pageTitle').innerHTML = titles[tabName];
+            
+            const subtitles = {
+                'plan': '在闪耀星球，每一天都是成长',
+                'energy': '选择适合你的课程与产品',
+                'reward': '记录成长，奖励自己',
+                'member': '专属权益，助力成长'
+            };
+            document.getElementById('pageSubtitle').textContent = subtitles[tabName];
+        }
+
+        // 鼓励语句库
+        const encourageMessages = [
+            '太棒了！你正在闪闪发光，继续保持！',
+            '每一次坚持都是对更好自己的投资！',
+            '你比自己想象的更优秀，继续加油！',
+            '今天的努力，是明天惊喜的铺垫！',
+            '你正在用行动书写自己的闪耀故事！',
+            '小小的进步，也是大大的胜利！',
+            '你的坚持让星球更加闪耀！',
+            '这就是成长的力量，为你骄傲！',
+            '每一步都算数，你做得很好！',
+            '保持这份热情，未来可期！'
+        ];
+
+        // 打卡任务
+        function toggleTask(el) {
+            const taskItem = el.closest('.task-item');
+            const taskId = taskItem.dataset.task;
+            const feedbackEl = taskItem.querySelector('.encourage-feedback');
+            const feedbackTextEl = taskItem.querySelector('.feedback-text');
+            
+            if (el.classList.contains('checked')) {
+                el.classList.remove('checked');
+                el.textContent = '';
+                taskItem.classList.remove('completed');
+                if (feedbackEl) feedbackEl.classList.remove('show');
+            } else {
+                el.classList.add('checked');
+                el.textContent = '✓';
+                taskItem.classList.add('completed');
+                // 触发完成动画
+                el.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    el.style.transform = 'scale(1)';
+                }, 200);
+                
+                // 显示鼓励反馈
+                if (feedbackEl && feedbackTextEl) {
+                    const randomMsg = encourageMessages[Math.floor(Math.random() * encourageMessages.length)];
+                    feedbackTextEl.textContent = randomMsg;
+                    feedbackEl.classList.add('show');
+                }
+            }
+            updateProgress();
+        }
+
+        // 打开拍照入口
+        function openCamera(btn) {
+            const taskItem = btn.closest('.task-item');
+            const uploadArea = taskItem.querySelector('.photo-upload-area');
+            if (uploadArea) {
+                uploadArea.classList.toggle('show');
+            }
+        }
+
+        // 模拟拍照上传
+        function simulatePhotoUpload(area) {
+            const taskItem = area.closest('.task-item');
+            const checkbox = taskItem.querySelector('.task-checkbox');
+            const feedbackEl = taskItem.querySelector('.encourage-feedback');
+            const feedbackTextEl = taskItem.querySelector('.feedback-text');
+            
+            alert('📷 拍照上传演示\n\n在实际APP中，这里将调用相机拍照或从相册选择照片。');
+            
+            // 自动标记为完成
+            if (!checkbox.classList.contains('checked')) {
+                checkbox.classList.add('checked');
+                checkbox.textContent = '✓';
+                taskItem.classList.add('completed');
+            }
+            
+            // 隐藏拍照区域
+            area.classList.remove('show');
+            
+            // 显示鼓励反馈
+            if (feedbackEl && feedbackTextEl) {
+                const randomMsg = encourageMessages[Math.floor(Math.random() * encourageMessages.length)];
+                feedbackTextEl.textContent = randomMsg;
+                feedbackEl.classList.add('show');
+            }
+            
+            updateProgress();
+        }
+
+        // 发起邀约
+        function shareTask(taskName) {
+            alert('邀请好友一起打卡\n\n任务：' + taskName + '\n\n在实际APP中，这里将生成邀约卡片，可以发送给好友邀请一起完成任务，互相监督共同成长。');
+        }
+
+        // 星球社区 - 点赞
+        function likePost(btn) {
+            const countEl = btn.querySelector('.action-count');
+            let count = parseInt(countEl.textContent);
+
+            if (btn.classList.contains('liked')) {
+                btn.classList.remove('liked');
+                countEl.textContent = count - 1;
+            } else {
+                btn.classList.add('liked');
+                countEl.textContent = count + 1;
+            }
+        }
+
+        // 星球社区 - 展开/收起评论
+        function toggleComment(btn) {
+            const post = btn.closest('.community-post');
+            const commentSection = post.querySelector('.comment-section');
+            if (commentSection.style.display === 'none') {
+                commentSection.style.display = 'block';
+            } else {
+                commentSection.style.display = 'none';
+            }
+        }
+
+        // 星球社区 - 分享动态
+        function sharePost(userName, taskName) {
+            alert('分享动态\n\n' + userName + ' 完成了「' + taskName + '」\n\n在实际APP中，这里将生成分享卡片，可以分享到朋友圈或保存图片。');
+        }
+
+        // 星球社区 - 提交评论（回车）
+        function submitComment(event, input) {
+            if (event.key === 'Enter') {
+                sendComment(input.nextElementSibling);
+            }
+        }
+
+        // 星球社区 - 发送评论
+        function sendComment(btn) {
+            const inputArea = btn.closest('.comment-input-area');
+            const input = inputArea.querySelector('.comment-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const commentList = inputArea.previousElementSibling;
+            const newComment = document.createElement('div');
+            newComment.className = 'comment-item';
+            newComment.innerHTML = '<span class="comment-user">我：</span><span class="comment-text">' + text + '</span>';
+            commentList.appendChild(newComment);
+
+            input.value = '';
+
+            // 更新评论数
+            const post = btn.closest('.community-post');
+            const commentBtn = post.querySelector('.post-action:nth-child(2)');
+            const countEl = commentBtn.querySelector('.action-count');
+            countEl.textContent = parseInt(countEl.textContent) + 1;
+        }
+
+        // 查看会员详情
+        function showUpgradeInfo(tier) {
+            const info = {
+                '萌芽': '萌芽会员 ¥87/季度\n\n适合刚开始自我成长之旅的你：\n• AI计划生成：每季度9次\n• 基础成长报告\n• 能量中心9.5折\n\n点击「补差价升级」可随时升级到更高等级。',
+                '星耀': '星耀会员 ¥297/季度\n\n适合认真投入成长的你：\n• AI专属计划：无限次\n• 深度数据分析\n• 专属成长社群\n• 能量中心9折\n\n你已解锁4/6项权益，升级女王可解锁全部。',
+                '女王': '星球女王 ¥897/季度\n\n适合追求极致成长的你：\n• 包含星耀全部权益\n• 线下活动报名参与权\n• 1对1成长顾问（季度）\n• 能量中心8.5折\n\n尊享最高等级权益，开启女王之路。'
+            };
+            alert(info[tier] || '会员详情');
+        }
+
+        // 补差价升级
+        function upgradeTier(targetTier) {
+            const currentTier = '星耀';
+            const currentPrice = 297;
+            const targetPrice = 897;
+            const diff = targetPrice - currentPrice;
+
+            const confirmMsg = '补差价升级确认\n\n' +
+                '当前会员：' + currentTier + '会员（¥' + currentPrice + '/季度）\n' +
+                '目标会员：' + targetTier + '（¥' + targetPrice + '/季度）\n' +
+                '补差价：¥' + diff + '/季度\n\n' +
+                '升级后即刻解锁：\n' +
+                '• 线下活动报名参与权\n' +
+                '• 1对1成长顾问（季度）\n' +
+                '• 能量中心8.5折\n\n' +
+                '当前会员剩余有效期可自动抵扣，无需额外计算。\n\n' +
+                '是否确认升级？';
+
+            if (confirm(confirmMsg)) {
+                alert('🎉 升级成功！\n\n你已升级为「星球女王」会员！\n\n新的权益已解锁，快去体验吧！');
+            }
+        }
+
+        // 更新进度
+        function updateProgress() {
+            const total = document.querySelectorAll('.task-item').length;
+            const completed = document.querySelectorAll('.task-checkbox.checked').length;
+            const progressText = document.querySelector('.card-title span');
+            if (progressText) {
+                progressText.textContent = completed + '/' + total + ' 完成';
+            }
+        }
+
+        // 绘制每日行动完成曲线
+        function drawCompletionChart() {
+            const canvas = document.getElementById('completionChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+
+            const width = rect.width;
+            const height = rect.height;
+            const padding = { top: 20, right: 20, bottom: 10, left: 30 };
+            const chartW = width - padding.left - padding.right;
+            const chartH = height - padding.top - padding.bottom;
+
+            // 近7天完成数据（百分比）
+            const data = [60, 80, 40, 100, 75, 90, 66];
+            const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+
+            // 清空画布
+            ctx.clearRect(0, 0, width, height);
+
+            // 绘制网格线
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = padding.top + (chartH / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                ctx.stroke();
+            }
+
+            // 绘制Y轴标签
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 4; i++) {
+                const y = padding.top + (chartH / 4) * i;
+                ctx.fillText((100 - i * 25) + '%', padding.left - 6, y + 3);
+            }
+
+            // 绘制曲线
+            const points = data.map((val, i) => ({
+                x: padding.left + (chartW / (data.length - 1)) * i,
+                y: padding.top + chartH - (val / 100) * chartH
+            }));
+
+            // 填充区域
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, padding.top + chartH);
+            points.forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.lineTo(points[points.length - 1].x, padding.top + chartH);
+            ctx.closePath();
+            const gradient = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartH);
+            gradient.addColorStop(0, 'rgba(212, 185, 106, 0.3)');
+            gradient.addColorStop(1, 'rgba(212, 185, 106, 0.02)');
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // 绘制线条
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            points.forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.strokeStyle = '#d4b96a';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 绘制数据点
+            points.forEach((p, i) => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#d4b96a';
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+                ctx.fillStyle = '#0a0a0f';
+                ctx.fill();
+
+                // 数值标签
+                ctx.fillStyle = '#d4b96a';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(data[i] + '%', p.x, p.y - 10);
+            });
+        }
+
+        // 勋章展示管理
+        let displayedBadges = [];
+        function toggleBadgeDisplay(el, icon, name) {
+            if (el.classList.contains('locked')) return;
+
+            const indicator = el.querySelector('.badge-display-indicator');
+            const isDisplayed = el.classList.contains('displayed');
+
+            if (isDisplayed) {
+                // 取消展示
+                el.classList.remove('displayed');
+                if (indicator) indicator.style.display = 'none';
+                displayedBadges = displayedBadges.filter(b => b.name !== name);
+            } else {
+                // 检查是否已达上限
+                if (displayedBadges.length >= 2) {
+                    alert('最多只能展示2个勋章在头像旁\n\n请先取消一个已展示的勋章，再选择新的。');
+                    return;
+                }
+                // 设置展示
+                el.classList.add('displayed');
+                if (indicator) indicator.style.display = 'block';
+                displayedBadges.push({ icon, name });
+            }
+
+            // 更新头像旁展示的勋章（实际APP中这里会更新头像组件）
+            updateAvatarBadges();
+        }
+
+        function updateAvatarBadges() {
+            // 实际APP中这里会更新头像旁边的勋章展示
+            console.log('头像旁展示的勋章：', displayedBadges);
+        }
+
+        // 显示星球详情
+        function showPlanetDetail(type) {
+            const names = {
+                'survival': '生存星球',
+                'money': '赚钱星球',
+                'beauty': '好看星球',
+                'fun': '好玩星球',
+                'flow': '心流星球'
+            };
+            alert('🪐 ' + names[type] + '\n\n这里将展示该星球的详细进度、历史记录和升级路径。');
+        }
+
+        // 当前筛选状态
+        let currentCategory = 'all';
+        let currentSubcategory = 'recommended';
+
+        // 筛选产品
+        function filterProducts() {
+            document.querySelectorAll('.product-card').forEach(card => {
+                const matchCategory = currentCategory === 'all' || card.dataset.category === currentCategory;
+                const matchSubcategory = currentSubcategory === 'all' || card.dataset.subcategory === currentSubcategory;
+                if (matchCategory && matchSubcategory) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // 选择一级分类（星球）
+        function selectCategory(el, category) {
+            document.querySelectorAll('.category-tab').forEach(tab => tab.classList.remove('active'));
+            el.classList.add('active');
+            currentCategory = category;
+            filterProducts();
+        }
+
+        // 选择二级分类（阶段）
+        function selectSubcategory(el, subcategory) {
+            document.querySelectorAll('.subcategory-tab').forEach(tab => tab.classList.remove('active'));
+            el.classList.add('active');
+            currentSubcategory = subcategory;
+            filterProducts();
+        }
+
+        // 加入计划
+        function addToPlan(btn, name) {
+            if (btn.classList.contains('added')) {
+                btn.classList.remove('added');
+                btn.textContent = '加入计划';
+            } else {
+                btn.classList.add('added');
+                btn.textContent = '✓ 已加入';
+                alert('✅ "' + name + '" 已加入你的计划！');
+            }
+        }
+
+        // 添加奖励
+        function addReward() {
+            const name = document.getElementById('rewardName').value;
+            const desc = document.getElementById('rewardDesc').value;
+            if (!name.trim()) {
+                alert('请输入奖励名称');
+                return;
+            }
+            
+            const rewardList = document.getElementById('rewardList');
+            const rewardItem = document.createElement('div');
+            rewardItem.className = 'task-item';
+            rewardItem.innerHTML = `
+                <div class="task-content">
+                    <div class="task-title">${name}</div>
+                    <div class="task-meta">${desc || '自定义奖励'}</div>
+                </div>
+                <div class="task-tag" style="background: rgba(212, 185, 106, 0.2); color: var(--accent-gold);">待解锁</div>
+            `;
+            rewardList.appendChild(rewardItem);
+            
+            document.getElementById('rewardName').value = '';
+            document.getElementById('rewardDesc').value = '';
+        }
+
+        // 初始化
+        createStarfield();
+
+        // 获取URL参数中的人格类型（保留用于数据传递）
+        const urlParams = new URLSearchParams(window.location.search);
+        const personality = urlParams.get('personality') || 'fire';
+
+        // 动画进度条
+        setTimeout(() => {
+            document.querySelectorAll('.dimension-bar-fill').forEach(bar => {
+                const width = bar.style.width;
+                bar.style.width = '0';
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, 100);
+            });
+        }, 500);
+
+        // 绘制完成曲线（当切换到奖励中心Tab时）
+        const originalSwitchTab = switchTab;
+        switchTab = function(tabName) {
+            originalSwitchTab(tabName);
+            if (tabName === 'reward') {
+                setTimeout(drawCompletionChart, 300);
+            }
+        };
+    </script>
+</body>
+</html>

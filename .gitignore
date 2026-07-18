@@ -1,0 +1,60 @@
+# 依赖与构建
+node_modules/
+dist/
+frontend/dist/
+admin/dist/
+frontend/android/.gradle/
+frontend/android/app/build/
+frontend/android/build/
+frontend/android/local.properties
+*.apk
+*.aab
+!frontend/public/downloads/shining-planet.apk
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# 环境与密钥（切勿提交）
+.env
+.env.*
+!.env.example
+backend/.env
+*.pem
+*.key
+deploy-keys/
+**/shareholder
+
+# 数据库与本地数据
+*.db
+*.sqlite3
+
+# 打包与部署产物
+release/
+*.tar.gz
+shining-planet-release.tar.gz
+
+# IDE / 系统
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+*.log
+
+# 个人/杂项（非项目源码）
+个人文件夹/
+/images/
+!frontend/public/images/
+/preview*.png
+/freeai-*.png
+
+# Cursor / 本地工具
+.cursor/
+.tools/
+*.apk
+!frontend/public/downloads/*.apk

@@ -1,0 +1,264 @@
+<!-- 星空背景 -->
+    <Starfield />
+
+    <!-- 页面内容 -->
+    <div class="page-container">
+        <header class="header">
+            <div class="logo">✦ SHINING PLANET ✦</div>
+            <h1 class="title">选择你的<span>五行人格</span></h1>
+            <p class="subtitle">根据你的职业与性格特质<br>找到属于你的星际女神化身</p>
+            <div class="divider"></div>
+        </header>
+
+        <div class="elements-grid" id="elementsGrid">
+            <!-- 木型 - 生发型 -->
+            <div class="element-card wood" data-element="wood" onclick="selectElement('wood')">
+                <div class="goddess-avatar wood">
+                    <img src="images/goddess-wood.png" alt="木型女神">
+                </div>
+                <div class="card-content">
+                    <div class="card-header">
+                        <span class="element-name wood">木型</span>
+                        <span class="element-type wood">生发型</span>
+                    </div>
+                    <div class="card-traits">理想、共情、上进、有风骨</div>
+                    <div class="card-careers">适合：教育、写作、公益、文化创意</div>
+                </div>
+                <div class="select-indicator"></div>
+            </div>
+
+            <!-- 火型 - 传播型 -->
+            <div class="element-card fire" data-element="fire" onclick="selectElement('fire')">
+                <div class="goddess-avatar fire">
+                    <img src="images/goddess-fire.png" alt="火型女神">
+                </div>
+                <div class="card-content">
+                    <div class="card-header">
+                        <span class="element-name fire">火型</span>
+                        <span class="element-type fire">传播型</span>
+                    </div>
+                    <div class="card-traits">热情、表达、感染力、行动力</div>
+                    <div class="card-careers">适合：HR、销售、主持、市场营销</div>
+                </div>
+                <div class="select-indicator"></div>
+            </div>
+
+            <!-- 土型 - 承载型 -->
+            <div class="element-card earth" data-element="earth" onclick="selectElement('earth')">
+                <div class="goddess-avatar earth">
+                    <img src="images/goddess-earth.png" alt="土型女神">
+                </div>
+                <div class="card-content">
+                    <div class="card-header">
+                        <span class="element-name earth">土型</span>
+                        <span class="element-type earth">承载型</span>
+                    </div>
+                    <div class="card-traits">稳重、守信、包容、责任心</div>
+                    <div class="card-careers">适合：公务员、行政、会计、后勤</div>
+                </div>
+                <div class="select-indicator"></div>
+            </div>
+
+            <!-- 金型 - 决断型 -->
+            <div class="element-card metal" data-element="metal" onclick="selectElement('metal')">
+                <div class="goddess-avatar metal">
+                    <img src="images/goddess-metal.png" alt="金型女神">
+                </div>
+                <div class="card-content">
+                    <div class="card-header">
+                        <span class="element-name metal">金型</span>
+                        <span class="element-type metal">决断型</span>
+                    </div>
+                    <div class="card-traits">理性、正义、果断、重情义</div>
+                    <div class="card-careers">适合：创业、法律、金融、风控</div>
+                </div>
+                <div class="select-indicator"></div>
+            </div>
+
+            <!-- 水型 - 洞察型 -->
+            <div class="element-card water" data-element="water" onclick="selectElement('water')">
+                <div class="goddess-avatar water">
+                    <img src="images/goddess-water.png" alt="水型女神">
+                </div>
+                <div class="card-content">
+                    <div class="card-header">
+                        <span class="element-name water">水型</span>
+                        <span class="element-type water">洞察型</span>
+                    </div>
+                    <div class="card-traits">聪慧、通透、共情、变通</div>
+                    <div class="card-careers">适合：心理咨询、编剧、咨询、猎头</div>
+                </div>
+                <div class="select-indicator"></div>
+            </div>
+        </div>
+
+        <div class="bottom-section">
+            <p class="hint-text">点击卡片查看详情，选择与你最契合的人格</p>
+            <button class="confirm-btn" id="confirmBtn" onclick="confirmSelection()">确认选择</button>
+        </div>
+    </div>
+
+    <!-- 详情浮层遮罩 -->
+    <div class="detail-panel-overlay" id="detailOverlay" onclick="closeDetail()"></div>
+
+    <!-- 详情浮层 -->
+    <div class="detail-panel" id="detailPanel">
+        <button class="close-detail" onclick="closeDetail()">✕</button>
+        <div class="detail-header">
+            <div class="detail-avatar" id="detailAvatar">
+                <div class="placeholder-icon" id="detailIcon">🌿</div>
+            </div>
+            <div class="detail-title-group">
+                <div class="detail-title" id="detailTitle">木型 · 生发型</div>
+                <div class="detail-subtitle" id="detailSubtitle">理想主义者 · 共情者</div>
+            </div>
+        </div>
+        <div class="detail-section">
+            <div class="detail-section-title">核心特质</div>
+            <p class="detail-text" id="detailTraits">理想、共情、上进、有风骨</p>
+        </div>
+        <div class="detail-section">
+            <div class="detail-section-title">适合职业</div>
+            <div class="detail-tags" id="detailCareers">
+                <span class="detail-tag">教育</span>
+                <span class="detail-tag">写作</span>
+                <span class="detail-tag">公益</span>
+                <span class="detail-tag">文化创意</span>
+            </div>
+        </div>
+        <div class="detail-section">
+            <div class="detail-section-title">成长建议</div>
+            <p class="detail-text" id="detailAdvice">发挥你的共情力与创造力，在帮助他人的过程中实现自我价值。注意平衡理想与现实，让梦想落地生根。</p>
+        </div>
+        <button class="detail-btn" onclick="confirmFromDetail()">选择这个人格</button>
+    </div>
+
+    <script>
+        // 生成星空背景
+        function createStarfield() {
+            const container = document.getElementById('starfield');
+            const starCount = 80;
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.setProperty('--duration', (2 + Math.random() * 4) + 's');
+                star.style.setProperty('--delay', Math.random() * 5 + 's');
+                star.style.setProperty('--opacity', 0.3 + Math.random() * 0.7);
+                const size = 1 + Math.random() * 2;
+                star.style.width = size + 'px';
+                star.style.height = size + 'px';
+                container.appendChild(star);
+            }
+        }
+
+        // 五行人格数据
+        const elementData = {
+            wood: {
+                name: '木型 · 生发型',
+                subtitle: '理想主义者 · 共情者',
+                icon: '🌿',
+                traits: '理想、共情、上进、有风骨',
+                careers: ['教育', '写作', '公益', '文化创意'],
+                advice: '发挥你的共情力与创造力，在帮助他人的过程中实现自我价值。注意平衡理想与现实，让梦想落地生根。'
+            },
+            fire: {
+                name: '火型 · 传播型',
+                subtitle: '热情领袖 · 表达者',
+                icon: '🔥',
+                traits: '热情、表达、感染力、行动力',
+                careers: ['HR', '销售', '主持', '市场营销'],
+                advice: '用你的热情点燃他人，在传播与连接中创造影响力。注意控制节奏，避免过度消耗自己的能量。'
+            },
+            earth: {
+                name: '土型 · 承载型',
+                subtitle: '稳重守护者 · 协调者',
+                icon: '🏔️',
+                traits: '稳重、守信、包容、责任心',
+                careers: ['公务员', '行政', '会计', '后勤'],
+                advice: '你的可靠与包容是团队最坚实的后盾。学会适时表达需求，不要总把别人的重担放在自己肩上。'
+            },
+            metal: {
+                name: '金型 · 决断型',
+                subtitle: '正义执行者 · 决策者',
+                icon: '⚔️',
+                traits: '理性、正义、果断、重情义',
+                careers: ['创业', '法律', '金融', '风控'],
+                advice: '你的决断力与正义感是改变世界的利器。在坚持原则的同时，保持对人性柔软的理解。'
+            },
+            water: {
+                name: '水型 · 洞察型',
+                subtitle: '智慧洞察者 · 策略家',
+                icon: '🌊',
+                traits: '聪慧、通透、共情、变通',
+                careers: ['心理咨询', '编剧', '咨询', '猎头'],
+                advice: '你的通透与智慧能看透事物本质。善用这份洞察力，同时保持与世界的温暖连接。'
+            }
+        };
+
+        let selectedElement = null;
+        let currentDetailElement = null;
+
+        // 选择人格
+        function selectElement(element) {
+            // 移除其他选中状态
+            document.querySelectorAll('.element-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            // 添加选中状态
+            const card = document.querySelector(`[data-element="${element}"]`);
+            card.classList.add('selected');
+            selectedElement = element;
+
+            // 激活确认按钮
+            document.getElementById('confirmBtn').classList.add('active');
+
+            // 显示详情
+            showDetail(element);
+        }
+
+        // 显示详情
+        function showDetail(element) {
+            currentDetailElement = element;
+            const data = elementData[element];
+
+            document.getElementById('detailTitle').textContent = data.name;
+            document.getElementById('detailSubtitle').textContent = data.subtitle;
+            document.getElementById('detailIcon').textContent = data.icon;
+            document.getElementById('detailTraits').textContent = data.traits;
+            document.getElementById('detailAdvice').textContent = data.advice;
+
+            const avatar = document.getElementById('detailAvatar');
+            avatar.className = 'detail-avatar ' + element;
+
+            const careersContainer = document.getElementById('detailCareers');
+            careersContainer.innerHTML = data.careers.map(c => `<span class="detail-tag">${c}</span>`).join('');
+
+            document.getElementById('detailOverlay').classList.add('show');
+            document.getElementById('detailPanel').classList.add('show');
+        }
+
+        // 关闭详情
+        function closeDetail() {
+            document.getElementById('detailOverlay').classList.remove('show');
+            document.getElementById('detailPanel').classList.remove('show');
+        }
+
+        // 从详情确认选择
+        function confirmFromDetail() {
+            closeDetail();
+            confirmSelection();
+        }
+
+        // 确认选择
+        function confirmSelection() {
+            if (!selectedElement) return;
+            const data = elementData[selectedElement];
+            alert(`欢迎来到闪耀星球！\n\n你已选择：${data.name}\n\n接下来，你将进入属于你的星球成长路径。每一天的微小行动，都是在星球上点亮一颗星星。✨`);
+        }
+
+        // 初始化
+        createStarfield();
+    </script>

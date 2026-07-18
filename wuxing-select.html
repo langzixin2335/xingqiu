@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>闪耀星球 - 选择你的五行人格</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0A0A0F;
+            --bg-card: #14141E;
+            --bg-card-hover: #1E1E2E;
+            --text-primary: #F0E6D3;
+            --text-secondary: #A89B8C;
+            --text-muted: #6B5D4D;
+            --accent-gold: #D4B96A;
+            --accent-gold-light: #E8C55A;
+            --wood: #2D5A3D;
+            --wood-light: #4A8C5E;
+            --fire: #C23A2B;
+            --fire-light: #E85A4A;
+            --earth: #B8953F;
+            --earth-light: #D4B96A;
+            --metal: #8A7B6B;
+            --metal-light: #B5A89A;
+            --water: #1E3A5F;
+            --water-light: #3A6FA0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 星空背景动画 */
+        .starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0;
+            animation: twinkle var(--duration) ease-in-out infinite;
+            animation-delay: var(--delay);
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: var(--opacity); transform: scale(1); }
+        }
+
+        /* 页面容器 */
+        .page-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            margin: 0 auto;
+            min-height: 100vh;
+            padding: 24px 20px 40px;
+        }
+
+        /* 顶部标题区 */
+        .header {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .logo {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 14px;
+            color: var(--accent-gold);
+            letter-spacing: 4px;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+
+        .title {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .title span {
+            color: var(--accent-gold);
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 4px;
+        }
+
+        .divider {
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+            margin: 16px auto;
+        }
+
+        /* 五行卡片网格 */
+        .elements-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 8px;
+            width: 100%;
+        }
+
+        .element-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            position: relative;
+            width: 100%;
+            flex-wrap: nowrap;
+        }
+
+        .element-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .element-card.wood::before {
+            background: linear-gradient(135deg, rgba(45, 90, 61, 0.15), transparent);
+        }
+
+        .element-card.fire::before {
+            background: linear-gradient(135deg, rgba(194, 58, 43, 0.15), transparent);
+        }
+
+        .element-card.earth::before {
+            background: linear-gradient(135deg, rgba(184, 149, 63, 0.15), transparent);
+        }
+
+        .element-card.metal::before {
+            background: linear-gradient(135deg, rgba(138, 123, 107, 0.15), transparent);
+        }
+
+        .element-card.water::before {
+            background: linear-gradient(135deg, rgba(30, 58, 95, 0.15), transparent);
+        }
+
+        .element-card:hover::before,
+        .element-card.selected::before {
+            opacity: 1;
+        }
+
+        .element-card.wood:hover,
+        .element-card.wood.selected {
+            border-color: var(--wood-light);
+            box-shadow: 0 0 20px rgba(45, 90, 61, 0.3);
+        }
+
+        .element-card.fire:hover,
+        .element-card.fire.selected {
+            border-color: var(--fire-light);
+            box-shadow: 0 0 20px rgba(194, 58, 43, 0.3);
+        }
+
+        .element-card.earth:hover,
+        .element-card.earth.selected {
+            border-color: var(--earth-light);
+            box-shadow: 0 0 20px rgba(184, 149, 63, 0.3);
+        }
+
+        .element-card.metal:hover,
+        .element-card.metal.selected {
+            border-color: var(--metal-light);
+            box-shadow: 0 0 20px rgba(138, 123, 107, 0.3);
+        }
+
+        .element-card.water:hover,
+        .element-card.water.selected {
+            border-color: var(--water-light);
+            box-shadow: 0 0 20px rgba(30, 58, 95, 0.3);
+        }
+
+        /* 女神头像占位区 */
+        .goddess-avatar {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .goddess-avatar.wood {
+            background: linear-gradient(135deg, var(--wood), var(--wood-light));
+            box-shadow: 0 4px 15px rgba(45, 90, 61, 0.4);
+        }
+
+        .goddess-avatar.fire {
+            background: linear-gradient(135deg, var(--fire), var(--fire-light));
+            box-shadow: 0 4px 15px rgba(194, 58, 43, 0.4);
+        }
+
+        .goddess-avatar.earth {
+            background: linear-gradient(135deg, var(--earth), var(--earth-light));
+            box-shadow: 0 4px 15px rgba(184, 149, 63, 0.4);
+        }
+
+        .goddess-avatar.metal {
+            background: linear-gradient(135deg, var(--metal), var(--metal-light));
+            box-shadow: 0 4px 15px rgba(138, 123, 107, 0.4);
+        }
+
+        .goddess-avatar.water {
+            background: linear-gradient(135deg, var(--water), var(--water-light));
+            box-shadow: 0 4px 15px rgba(30, 58, 95, 0.4);
+        }
+
+        .goddess-avatar .placeholder-icon {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .goddess-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        /* 卡片内容 */
+        .card-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .card-header {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            flex-wrap: nowrap;
+        }
+
+        .element-name {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 18px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .element-name.wood { color: var(--wood-light); }
+        .element-name.fire { color: var(--fire-light); }
+        .element-name.earth { color: var(--earth-light); }
+        .element-name.metal { color: var(--metal-light); }
+        .element-name.water { color: var(--water-light); }
+
+        .element-type {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .element-type.wood {
+            background: rgba(45, 90, 61, 0.3);
+            color: var(--wood-light);
+        }
+
+        .element-type.fire {
+            background: rgba(194, 58, 43, 0.3);
+            color: var(--fire-light);
+        }
+
+        .element-type.earth {
+            background: rgba(184, 149, 63, 0.3);
+            color: var(--earth-light);
+        }
+
+        .element-type.metal {
+            background: rgba(138, 123, 107, 0.3);
+            color: var(--metal-light);
+        }
+
+        .element-type.water {
+            background: rgba(30, 58, 95, 0.3);
+            color: var(--water-light);
+        }
+
+        .card-traits {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 4px;
+        }
+
+        .card-careers {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* 选择指示器 */
+        .select-indicator {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        .element-card.selected .select-indicator {
+            border-color: var(--accent-gold);
+            background: var(--accent-gold);
+        }
+
+        .select-indicator::after {
+            content: '✓';
+            font-size: 14px;
+            color: var(--bg-dark);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .element-card.selected .select-indicator::after {
+            opacity: 1;
+        }
+
+        /* 底部按钮 */
+        .bottom-section {
+            padding-top: 24px;
+            margin-top: 24px;
+        }
+
+        .hint-text {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .confirm-btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-light));
+            color: var(--bg-dark);
+            font-family: 'Noto Sans SC', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .confirm-btn.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .confirm-btn.active:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(212, 185, 106, 0.4);
+        }
+
+        /* 选中详情浮层 */
+        .detail-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border-radius: 24px 24px 0 0;
+            padding: 24px 24px 32px;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 100;
+            max-width: 430px;
+            margin: 0 auto;
+            border-top: 1px solid rgba(212, 185, 106, 0.2);
+        }
+
+        .detail-panel.show {
+            transform: translateY(0);
+        }
+
+        .detail-panel-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 99;
+        }
+
+        .detail-panel-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .detail-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .detail-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            flex-shrink: 0;
+        }
+
+        .detail-avatar.wood {
+            background: linear-gradient(135deg, var(--wood), var(--wood-light));
+            box-shadow: 0 4px 20px rgba(45, 90, 61, 0.5);
+        }
+
+        .detail-avatar.fire {
+            background: linear-gradient(135deg, var(--fire), var(--fire-light));
+            box-shadow: 0 4px 20px rgba(194, 58, 43, 0.5);
+        }
+
+        .detail-avatar.earth {
+            background: linear-gradient(135deg, var(--earth), var(--earth-light));
+            box-shadow: 0 4px 20px rgba(184, 149, 63, 0.5);
+        }
+
+        .detail-avatar.metal {
+            background: linear-gradient(135deg, var(--metal), var(--metal-light));
+            box-shadow: 0 4px 20px rgba(138, 123, 107, 0.5);
+        }
+
+        .detail-avatar.water {
+            background: linear-gradient(135deg, var(--water), var(--water-light));
+            box-shadow: 0 4px 20px rgba(30, 58, 95, 0.5);
+        }
+
+        .detail-title-group {
+            flex: 1;
+        }
+
+        .detail-title {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .detail-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .detail-section {
+            margin-bottom: 16px;
+        }
+
+        .detail-section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent-gold);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .detail-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .detail-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .detail-tag {
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            background: rgba(212, 185, 106, 0.15);
+            color: var(--accent-gold);
+            border: 1px solid rgba(212, 185, 106, 0.3);
+        }
+
+        .detail-btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-light));
+            color: var(--bg-dark);
+            font-family: 'Noto Sans SC', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .detail-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(212, 185, 106, 0.4);
+        }
+
+        .close-detail {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: var(--text-secondary);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .close-detail:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--text-primary);
+        }
+
+        /* 响应式 */
+        @media (min-width: 431px) {
+            .page-container {
+                border-left: 1px solid rgba(212, 185, 106, 0.1);
+                border-right: 1px solid rgba(212, 185, 106, 0.1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 星空背景 -->
+    <div class="starfield" id="starfield"></div>
+
+    <!-- 页面内容 -->
+    <div class="page-container">
+        <header class="header">
+            <div class="logo">✦ SHINING PLANET ✦</div>
+            <h1 class="title">选择你的<span>五行人格</span></h1>
+            <p class="subtitle">根据你的职业与性格特质<br>找到属于你的星际女神化身</p>
+            <div class="divider"></div>
+        </header>
+
+        <div class="elements-grid" id="elementsGrid">
+            <!-- 木型 - 生发型 -->
+            <div class="element-card wood" data-element="wood" onclick="selectElement('wood')">
+                <div class="goddess-avatar wood">
+                    <img src="images/goddess-wood.png" alt="木型女神">
+                </div>
+                <div class="card-content">
+                    <div class="card-header">
+                        <span class="element-name wood">木型</span>
+                        <span class="element-type wood">生发型</span>
+                    </div>
+                    <div class="card-traits">理想、共情、上进、有风骨</div>
+                    <div class="card-careers">适合：教育、写作、公益、文化创意</div>
+                </div>
+                <div class="select-indicator"></div>
+            </div>
+
+            <!-- 火型 - 传播型 -->
+            <div class="element-card fire" data-element="fire" onclick="selectElement('fire')">
+                <div class="goddess-avatar fire">
+                    <img src="images/goddess-fire.png" alt="火型女神">
+                </div>
+                <div class="card-content">
+                    <div class="card-header">
+                        <span class="element-name fire">火型</span>
+                        <span class="element-type fire">传播型</span>
+                    </div>
+                    <div class="card-traits">热情、表达、感染力、行动力</div>
+                    <div class="card-careers">适合：HR、销售、主持、市场营销</div>
+                </div>
+                <div class="select-indicator"></div>
+            </div>
+
+            <!-- 土型 - 承载型 -->
+            <div class="element-card earth" data-element="earth" onclick="selectElement('earth')">
+                <div class="goddess-avatar earth">
+                    <img src="images/goddess-earth.png" alt="土型女神">
+                </div>
+                <div class="card-content">
+                    <div class="card-header">
+                        <span class="element-name earth">土型</span>
+                        <span class="element-type earth">承载型</span>
+                    </div>
+                    <div class="card-traits">稳重、守信、包容、责任心</div>
+                    <div class="card-careers">适合：公务员、行政、会计、后勤</div>
+                </div>
+                <div class="select-indicator"></div>
+            </div>
+
+            <!-- 金型 - 决断型 -->
+            <div class="element-card metal" data-element="metal" onclick="selectElement('metal')">
+                <div class="goddess-avatar metal">
+                    <img src="images/goddess-metal.png" alt="金型女神">
+                </div>
+                <div class="card-content">
+                    <div class="card-header">
+                        <span class="element-name metal">金型</span>
+                        <span class="element-type metal">决断型</span>
+                    </div>
+                    <div class="card-traits">理性、正义、果断、重情义</div>
+                    <div class="card-careers">适合：创业、法律、金融、风控</div>
+                </div>
+                <div class="select-indicator"></div>
+            </div>
+
+            <!-- 水型 - 洞察型 -->
+            <div class="element-card water" data-element="water" onclick="selectElement('water')">
+                <div class="goddess-avatar water">
+                    <img src="images/goddess-water.png" alt="水型女神">
+                </div>
+                <div class="card-content">
+                    <div class="card-header">
+                        <span class="element-name water">水型</span>
+                        <span class="element-type water">洞察型</span>
+                    </div>
+                    <div class="card-traits">聪慧、通透、共情、变通</div>
+                    <div class="card-careers">适合：心理咨询、编剧、咨询、猎头</div>
+                </div>
+                <div class="select-indicator"></div>
+            </div>
+        </div>
+
+        <div class="bottom-section">
+            <p class="hint-text">点击卡片查看详情，选择与你最契合的人格</p>
+            <button class="confirm-btn" id="confirmBtn" onclick="confirmSelection()">确认选择</button>
+        </div>
+    </div>
+
+    <!-- 详情浮层遮罩 -->
+    <div class="detail-panel-overlay" id="detailOverlay" onclick="closeDetail()"></div>
+
+    <!-- 详情浮层 -->
+    <div class="detail-panel" id="detailPanel">
+        <button class="close-detail" onclick="closeDetail()">✕</button>
+        <div class="detail-header">
+            <div class="detail-avatar" id="detailAvatar">
+                <div class="placeholder-icon" id="detailIcon">🌿</div>
+            </div>
+            <div class="detail-title-group">
+                <div class="detail-title" id="detailTitle">木型 · 生发型</div>
+                <div class="detail-subtitle" id="detailSubtitle">理想主义者 · 共情者</div>
+            </div>
+        </div>
+        <div class="detail-section">
+            <div class="detail-section-title">核心特质</div>
+            <p class="detail-text" id="detailTraits">理想、共情、上进、有风骨</p>
+        </div>
+        <div class="detail-section">
+            <div class="detail-section-title">适合职业</div>
+            <div class="detail-tags" id="detailCareers">
+                <span class="detail-tag">教育</span>
+                <span class="detail-tag">写作</span>
+                <span class="detail-tag">公益</span>
+                <span class="detail-tag">文化创意</span>
+            </div>
+        </div>
+        <div class="detail-section">
+            <div class="detail-section-title">成长建议</div>
+            <p class="detail-text" id="detailAdvice">发挥你的共情力与创造力，在帮助他人的过程中实现自我价值。注意平衡理想与现实，让梦想落地生根。</p>
+        </div>
+        <button class="detail-btn" onclick="confirmFromDetail()">选择这个人格</button>
+    </div>
+
+    <script>
+        // 生成星空背景
+        function createStarfield() {
+            const container = document.getElementById('starfield');
+            const starCount = 80;
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.setProperty('--duration', (2 + Math.random() * 4) + 's');
+                star.style.setProperty('--delay', Math.random() * 5 + 's');
+                star.style.setProperty('--opacity', 0.3 + Math.random() * 0.7);
+                const size = 1 + Math.random() * 2;
+                star.style.width = size + 'px';
+                star.style.height = size + 'px';
+                container.appendChild(star);
+            }
+        }
+
+        // 五行人格数据
+        const elementData = {
+            wood: {
+                name: '木型 · 生发型',
+                subtitle: '理想主义者 · 共情者',
+                icon: '🌿',
+                traits: '理想、共情、上进、有风骨',
+                careers: ['教育', '写作', '公益', '文化创意'],
+                advice: '发挥你的共情力与创造力，在帮助他人的过程中实现自我价值。注意平衡理想与现实，让梦想落地生根。'
+            },
+            fire: {
+                name: '火型 · 传播型',
+                subtitle: '热情领袖 · 表达者',
+                icon: '🔥',
+                traits: '热情、表达、感染力、行动力',
+                careers: ['HR', '销售', '主持', '市场营销'],
+                advice: '用你的热情点燃他人，在传播与连接中创造影响力。注意控制节奏，避免过度消耗自己的能量。'
+            },
+            earth: {
+                name: '土型 · 承载型',
+                subtitle: '稳重守护者 · 协调者',
+                icon: '🏔️',
+                traits: '稳重、守信、包容、责任心',
+                careers: ['公务员', '行政', '会计', '后勤'],
+                advice: '你的可靠与包容是团队最坚实的后盾。学会适时表达需求，不要总把别人的重担放在自己肩上。'
+            },
+            metal: {
+                name: '金型 · 决断型',
+                subtitle: '正义执行者 · 决策者',
+                icon: '⚔️',
+                traits: '理性、正义、果断、重情义',
+                careers: ['创业', '法律', '金融', '风控'],
+                advice: '你的决断力与正义感是改变世界的利器。在坚持原则的同时，保持对人性柔软的理解。'
+            },
+            water: {
+                name: '水型 · 洞察型',
+                subtitle: '智慧洞察者 · 策略家',
+                icon: '🌊',
+                traits: '聪慧、通透、共情、变通',
+                careers: ['心理咨询', '编剧', '咨询', '猎头'],
+                advice: '你的通透与智慧能看透事物本质。善用这份洞察力，同时保持与世界的温暖连接。'
+            }
+        };
+
+        let selectedElement = null;
+        let currentDetailElement = null;
+
+        // 选择人格
+        function selectElement(element) {
+            // 移除其他选中状态
+            document.querySelectorAll('.element-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            // 添加选中状态
+            const card = document.querySelector(`[data-element="${element}"]`);
+            card.classList.add('selected');
+            selectedElement = element;
+
+            // 激活确认按钮
+            document.getElementById('confirmBtn').classList.add('active');
+
+            // 显示详情
+            showDetail(element);
+        }
+
+        // 显示详情
+        function showDetail(element) {
+            currentDetailElement = element;
+            const data = elementData[element];
+
+            document.getElementById('detailTitle').textContent = data.name;
+            document.getElementById('detailSubtitle').textContent = data.subtitle;
+            document.getElementById('detailIcon').textContent = data.icon;
+            document.getElementById('detailTraits').textContent = data.traits;
+            document.getElementById('detailAdvice').textContent = data.advice;
+
+            const avatar = document.getElementById('detailAvatar');
+            avatar.className = 'detail-avatar ' + element;
+
+            const careersContainer = document.getElementById('detailCareers');
+            careersContainer.innerHTML = data.careers.map(c => `<span class="detail-tag">${c}</span>`).join('');
+
+            document.getElementById('detailOverlay').classList.add('show');
+            document.getElementById('detailPanel').classList.add('show');
+        }
+
+        // 关闭详情
+        function closeDetail() {
+            document.getElementById('detailOverlay').classList.remove('show');
+            document.getElementById('detailPanel').classList.remove('show');
+        }
+
+        // 从详情确认选择
+        function confirmFromDetail() {
+            closeDetail();
+            confirmSelection();
+        }
+
+        // 确认选择
+        function confirmSelection() {
+            if (!selectedElement) return;
+            const data = elementData[selectedElement];
+            alert(`欢迎来到闪耀星球！\n\n你已选择：${data.name}\n\n接下来，你将进入属于你的星球成长路径。每一天的微小行动，都是在星球上点亮一颗星星。✨`);
+        }
+
+        // 初始化
+        createStarfield();
+    </script>
+</body>
+</html>

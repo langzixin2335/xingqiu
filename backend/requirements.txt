@@ -1,0 +1,19 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+sqlalchemy>=2.0.36
+pydantic>=2.10.0
+pydantic-settings>=2.6.0
+python-jose[cryptography]>=3.3.0
+bcrypt>=4.0.0
+python-multipart>=0.0.12
+httpx>=0.27.0
+aiosqlite>=0.20.0
+
+# OCR（效率手册识别，RapidOCR 主 + EasyOCR 兜底）
+rapidocr-onnxruntime>=1.4.0
+easyocr>=1.7.0
+torch>=2.0.0
+pillow>=11.0.0
+numpy>=1.26.0
+pypdf>=5.0.0
+pymupdf>=1.24.0

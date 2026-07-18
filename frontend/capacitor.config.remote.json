@@ -1,0 +1,15 @@
+{
+  "appId": "com.shiningplanet.app",
+  "appName": "闪耀星球",
+  "webDir": "dist",
+  "server": {
+    "url": "https://xq.dongme.me",
+    "androidScheme": "https",
+    "allowNavigation": ["xq.dongme.me", "*.dongme.me"]
+  },
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#0a0a0f",
+    "webContentsDebuggingEnabled": false
+  }
+}

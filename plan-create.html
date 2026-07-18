@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>闪耀星球 - 制定你的成长计划</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0A0A0F;
+            --bg-card: #14141E;
+            --bg-card-hover: #1E1E2E;
+            --bg-input: #1A1A2E;
+            --text-primary: #F0E6D3;
+            --text-secondary: #A89B8C;
+            --text-muted: #6B5D4D;
+            --accent-gold: #D4B96A;
+            --accent-gold-light: #E8C55A;
+            --accent-gold-dark: #B89B4A;
+            --wood: #2D5A3D;
+            --wood-light: #4A8C5E;
+            --fire: #C23A2B;
+            --fire-light: #E85A4A;
+            --earth: #B8953F;
+            --earth-light: #D4B96A;
+            --metal: #8A7B6B;
+            --metal-light: #B5A89A;
+            --water: #1E3A5F;
+            --water-light: #3A6FA0;
+            --border: #2A2A3E;
+            --success: #4A8C5E;
+            --danger: #C23A2B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 星空背景 */
+        .starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0;
+            animation: twinkle var(--duration) ease-in-out infinite;
+            animation-delay: var(--delay);
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: var(--opacity); transform: scale(1); }
+        }
+
+        /* 页面容器 */
+        .page-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            margin: 0 auto;
+            min-height: 100vh;
+            padding: 24px 20px 100px;
+        }
+
+        /* 头部 */
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .brand-logo {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 12px;
+            color: var(--accent-gold);
+            letter-spacing: 4px;
+            margin-bottom: 16px;
+            opacity: 0.8;
+        }
+
+        .page-title {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            line-height: 1.3;
+            word-break: keep-all;
+        }
+
+        .page-title span {
+            color: var(--accent-gold);
+            display: inline;
+        }
+
+        .page-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .divider {
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+            margin: 16px auto;
+        }
+
+        /* 人格标签 */
+        .personality-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--bg-card);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+
+        .personality-tag img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .personality-tag span {
+            font-size: 14px;
+            color: var(--accent-gold);
+        }
+
+        /* 卡片样式 */
+        .card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .card-title {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title .icon {
+            font-size: 20px;
+        }
+
+        .card-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        /* 目标状态选择 */
+        .goal-status-options {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .status-option {
+            flex: 1;
+            padding: 16px;
+            background: var(--bg-input);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .status-option:hover {
+            border-color: var(--accent-gold-dark);
+        }
+
+        .status-option.selected {
+            border-color: var(--accent-gold);
+            background: rgba(212, 185, 106, 0.1);
+        }
+
+        .status-option .icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .status-option .label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .status-option .sublabel {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* 输入框样式 */
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .input-field:focus {
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 0 2px rgba(212, 185, 106, 0.1);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-muted);
+        }
+
+        textarea.input-field {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        /* 扫描上传区域 */
+        .scan-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 28px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 16px;
+            background: var(--bg-input);
+        }
+
+        .scan-area:hover {
+            border-color: var(--accent-gold);
+            background: rgba(212, 185, 106, 0.05);
+        }
+
+        .scan-area .scan-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+
+        .scan-area .scan-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .scan-area .scan-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* 五种时间标签 */
+        .time-types {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .time-type-tag {
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1.5px solid transparent;
+            white-space: nowrap;
+        }
+
+        .time-type-tag.survival {
+            background: rgba(45, 90, 61, 0.2);
+            color: var(--wood-light);
+            border-color: var(--wood);
+        }
+
+        .time-type-tag.money {
+            background: rgba(194, 58, 43, 0.2);
+            color: var(--fire-light);
+            border-color: var(--fire);
+        }
+
+        .time-type-tag.beauty {
+            background: rgba(184, 149, 63, 0.2);
+            color: var(--earth-light);
+            border-color: var(--earth);
+        }
+
+        .time-type-tag.fun {
+            background: rgba(138, 123, 107, 0.2);
+            color: var(--metal-light);
+            border-color: var(--metal);
+        }
+
+        .time-type-tag.flow {
+            background: rgba(30, 58, 95, 0.2);
+            color: var(--water-light);
+            border-color: var(--water);
+        }
+
+        .time-type-tag.selected {
+            transform: scale(1.05);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+            font-weight: 700;
+        }
+
+        /* 时间段选择 */
+        .period-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .period-btn {
+            flex: 1;
+            padding: 10px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .period-btn:hover {
+            border-color: var(--accent-gold-dark);
+        }
+
+        .period-btn.selected {
+            background: rgba(212, 185, 106, 0.15);
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        /* 目标列表 */
+        .goal-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .goal-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: var(--bg-input);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .goal-item .goal-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .goal-item .goal-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .goal-item .goal-title {
+            font-size: 14px;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .goal-item .goal-period {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .goal-item .goal-delete {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(194, 58, 43, 0.2);
+            border: none;
+            color: var(--fire-light);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        /* 每日目标设置 */
+        .daily-goal-form {
+            background: var(--bg-input);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .daily-goal-form .form-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .daily-goal-form .form-row .input-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        /* 时间选择器 */
+        .time-picker {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .time-picker input {
+            flex: 1;
+            padding: 10px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+            text-align: center;
+        }
+
+        /* 重复设置 */
+        .repeat-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .repeat-option {
+            padding: 6px 10px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .repeat-option:hover {
+            border-color: var(--accent-gold-dark);
+        }
+
+        .repeat-option.selected {
+            background: rgba(212, 185, 106, 0.15);
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        /* 开关 */
+        .switch-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .switch-row:last-child {
+            border-bottom: none;
+        }
+
+        .switch-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .switch.active {
+            background: var(--accent-gold);
+        }
+
+        .switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .switch.active::after {
+            left: 22px;
+        }
+
+        /* AI生成区域 */
+        .ai-generate-area {
+            background: linear-gradient(135deg, rgba(212, 185, 106, 0.1), rgba(30, 58, 95, 0.1));
+            border: 1px solid var(--accent-gold);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .ai-generate-area .ai-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .ai-generate-area .ai-title {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--accent-gold);
+            margin-bottom: 8px;
+        }
+
+        .ai-generate-area .ai-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .ai-generate-area .ai-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        /* 按钮样式 */
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Noto Sans SC', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-light));
+            color: var(--bg-dark);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(212, 185, 106, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-input);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--accent-gold);
+            border: 1px solid var(--accent-gold);
+        }
+
+        .btn-outline:hover {
+            background: rgba(212, 185, 106, 0.1);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .btn-row .btn {
+            flex: 1;
+        }
+
+        /* 底部固定按钮 */
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 16px 20px max(24px, env(safe-area-inset-bottom));
+            background: linear-gradient(to top, var(--bg-dark) 60%, transparent);
+            z-index: 100;
+        }
+
+        .bottom-bar .btn {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        /* 隐藏/显示 */
+        .hidden {
+            display: none !important;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 计划预览卡片 */
+        .plan-preview {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .plan-preview .plan-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .plan-preview .plan-header img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .plan-preview .plan-header .plan-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--accent-gold);
+        }
+
+        .plan-preview .plan-header .plan-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .plan-timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 12px;
+        }
+
+        .timeline-item .timeline-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent-gold);
+            margin-top: 4px;
+            flex-shrink: 0;
+        }
+
+        .timeline-item .timeline-content {
+            flex: 1;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .timeline-item:last-child .timeline-content {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .timeline-item .timeline-period {
+            font-size: 12px;
+            color: var(--accent-gold);
+            margin-bottom: 4px;
+        }
+
+        .timeline-item .timeline-goal {
+            font-size: 14px;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .timeline-item .timeline-action {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* 编辑按钮 */
+        .edit-btn {
+            padding: 6px 12px;
+            background: rgba(212, 185, 106, 0.1);
+            border: 1px solid var(--accent-gold);
+            border-radius: 6px;
+            color: var(--accent-gold);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .edit-btn:hover {
+            background: rgba(212, 185, 106, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <!-- 星空背景 -->
+    <div class="starfield" id="starfield"></div>
+
+    <div class="page-container">
+        <!-- 头部 -->
+        <div class="header">
+            <div class="brand-logo">✦ SHINING PLANET ✦</div>
+            <div class="page-title">制定你的<span>成长计划</span></div>
+            <div class="page-subtitle">为你定制专属成长路径</div>
+            <div class="divider"></div>
+        </div>
+
+        <!-- 第一步：选择目标状态 -->
+        <div class="card" id="step1">
+            <div class="card-title">
+                <span class="icon">🎯</span>
+                你的目标状态
+            </div>
+            <div class="card-desc">选择你当前的目标情况，我们将为你提供对应的计划制定方式</div>
+            
+            <div class="goal-status-options">
+                <div class="status-option selected" onclick="selectGoalStatus('has-plan')" id="status-has-plan">
+                    <span class="icon">📋</span>
+                    <div class="label">已有目标计划</div>
+                    <div class="sublabel">有明确目标</div>
+                </div>
+                <div class="status-option" onclick="selectGoalStatus('no-plan')" id="status-no-plan">
+                    <span class="icon">💡</span>
+                    <div class="label">有目标无计划</div>
+                    <div class="sublabel">需要AI生成</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 已有目标计划区域 -->
+        <div id="has-plan-area">
+            <!-- OCR扫描上传 -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">📷</span>
+                    效率手册扫描
+                </div>
+                <div class="card-desc">已有纸质计划？扫码或拍照上传，AI自动识别并导入</div>
+                
+                <div class="scan-area" onclick="simulateScan()">
+                    <div class="scan-icon">📷</div>
+                    <div class="scan-text">点击扫描或上传效率手册</div>
+                    <div class="scan-hint">支持拍照、相册选择、PDF上传</div>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">或手动输入你的核心目标</label>
+                    <textarea class="input-field" placeholder="例如：我想在3个月内减重10斤，提升演讲能力..."></textarea>
+                </div>
+            </div>
+
+            <!-- 五种时间目标设定 -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">⏰</span>
+                    五种时间星际目标
+                </div>
+                <div class="card-desc">将目标分配到五种时间维度，设定不同阶段</div>
+                
+                <div class="time-types">
+                    <div class="time-type-tag survival selected" onclick="selectTimeType('survival')">生存星球</div>
+                    <div class="time-type-tag money" onclick="selectTimeType('money')">赚钱星球</div>
+                    <div class="time-type-tag beauty" onclick="selectTimeType('beauty')">好看星球</div>
+                    <div class="time-type-tag fun" onclick="selectTimeType('fun')">好玩星球</div>
+                    <div class="time-type-tag flow" onclick="selectTimeType('flow')">心流星球</div>
+                </div>
+
+                <div class="period-selector">
+                    <button class="period-btn selected" onclick="selectPeriod('short')">短期<br><small>1-3个月</small></button>
+                    <button class="period-btn" onclick="selectPeriod('medium')">中期<br><small>3-6个月</small></button>
+                    <button class="period-btn" onclick="selectPeriod('long')">长期<br><small>6-12个月</small></button>
+                </div>
+
+                <div class="input-group">
+                    <input type="text" class="input-field" placeholder="输入这个阶段的具体目标..." id="goalInput">
+                </div>
+
+                <button class="btn btn-secondary" onclick="addGoal()">+ 添加目标</button>
+
+                <div class="goal-list" id="goalList">
+                    <div class="goal-item">
+                        <div class="goal-icon" style="background: rgba(45, 90, 61, 0.3);">🌿</div>
+                        <div class="goal-content">
+                            <div class="goal-title">每天运动30分钟，保持规律作息</div>
+                            <div class="goal-period">生存星球 | 短期 1-3个月</div>
+                        </div>
+                        <button class="goal-delete">×</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 每日目标设置 -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="icon">🔔</span>
+                    每日目标提醒
+                </div>
+                <div class="card-desc">设置每日小目标，像闹钟一样提醒你执行</div>
+
+                <div class="daily-goal-form">
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label class="input-label">目标内容</label>
+                            <input type="text" class="input-field" placeholder="例如：晨跑5公里">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label class="input-label">提醒时间</label>
+                            <div class="time-picker">
+                                <input type="time" value="07:00">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">所属类型</label>
+                            <select class="input-field">
+                                <option>生存星球</option>
+                                <option>赚钱星球</option>
+                                <option>好看星球</option>
+                                <option>好玩星球</option>
+                                <option>心流星球</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">重复周期</label>
+                        <div class="repeat-options">
+                            <div class="repeat-option selected">周一</div>
+                            <div class="repeat-option selected">周二</div>
+                            <div class="repeat-option selected">周三</div>
+                            <div class="repeat-option selected">周四</div>
+                            <div class="repeat-option selected">周五</div>
+                            <div class="repeat-option">周六</div>
+                            <div class="repeat-option">周日</div>
+                        </div>
+                    </div>
+                    <div class="switch-row">
+                        <span class="switch-label">节假日不生效</span>
+                        <div class="switch" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    <div class="switch-row">
+                        <span class="switch-label">开启智能提醒</span>
+                        <div class="switch active" onclick="toggleSwitch(this)"></div>
+                    </div>
+                </div>
+
+                <button class="btn btn-secondary">+ 添加每日目标</button>
+            </div>
+        </div>
+
+        <!-- 无计划区域：AI生成 -->
+        <div id="no-plan-area" class="hidden">
+            <div class="ai-generate-area">
+                <div class="ai-icon">✨</div>
+                <div class="ai-title">AI为你生成专属计划</div>
+                <div class="ai-desc">
+                    基于你的独特特质<br>
+                    结合你的日常时间分配，为你定制最优成长路径
+                </div>
+                <div class="ai-hint">
+                    💡 只需告诉我们你的核心目标，AI将自动拆解为五种时间的阶段计划
+                </div>
+                <div class="input-group" style="text-align: left;">
+                    <label class="input-label">你的核心目标是什么？</label>
+                    <textarea class="input-field" placeholder="例如：我想成为一名优秀的演讲者，能够自信地在公众场合表达..." style="min-height: 100px;"></textarea>
+                </div>
+                <div class="input-group" style="text-align: left;">
+                    <label class="input-label">你期望达成的时间？</label>
+                    <div class="period-selector">
+                        <button class="period-btn selected">3个月</button>
+                        <button class="period-btn">6个月</button>
+                        <button class="period-btn">1年</button>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="generatePlan()">✨ 生成我的专属计划</button>
+            </div>
+
+            <!-- 生成的计划预览 -->
+            <div id="planPreview" class="hidden">
+                <div class="plan-preview">
+                    <div class="plan-header">
+                        <div style="font-size: 32px;">🪐</div>
+                        <div>
+                            <div class="plan-title">你的专属成长计划</div>
+                            <div class="plan-subtitle">为你量身定制</div>
+                        </div>
+                        <button class="edit-btn">编辑</button>
+                    </div>
+                    <div class="plan-timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-period">第1-2周 · 启动期</div>
+                                <div class="timeline-goal">建立演讲基础，每天朗读15分钟</div>
+                                <div class="timeline-action">生存星球：保护嗓子，练习呼吸</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-period">第3-4周 · 积累期</div>
+                                <div class="timeline-goal">录制3分钟演讲视频，每周2次</div>
+                                <div class="timeline-action">赚钱星球：学习演讲技巧课程</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-period">第2个月 · 突破期</div>
+                                <div class="timeline-goal">参加线下演讲俱乐部，实战演练</div>
+                                <div class="timeline-action">好玩星球：在轻松环境中练习</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-period">第3个月 · 绽放期</div>
+                                <div class="timeline-goal">完成一次公开演讲，分享成长</div>
+                                <div class="timeline-action">心流星球：享受表达的乐趣</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn btn-secondary">重新生成</button>
+                    <button class="btn btn-primary">确认计划</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部确认按钮 -->
+        <div style="height: 100px;"></div>
+    </div>
+
+    <div class="bottom-bar">
+        <button class="btn btn-primary" onclick="confirmPlan()">确认我的计划</button>
+    </div>
+
+    <script>
+        // 生成星空
+        function createStarfield() {
+            const starfield = document.getElementById('starfield');
+            const starCount = 80;
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
+                star.style.setProperty('--delay', Math.random() * 5 + 's');
+                star.style.setProperty('--opacity', Math.random() * 0.8 + 0.2);
+                starfield.appendChild(star);
+            }
+        }
+
+        // 选择目标状态
+        function selectGoalStatus(status) {
+            document.querySelectorAll('.status-option').forEach(el => el.classList.remove('selected'));
+            document.getElementById('status-' + status).classList.add('selected');
+            
+            if (status === 'has-plan') {
+                document.getElementById('has-plan-area').classList.remove('hidden');
+                document.getElementById('no-plan-area').classList.add('hidden');
+            } else {
+                document.getElementById('has-plan-area').classList.add('hidden');
+                document.getElementById('no-plan-area').classList.remove('hidden');
+                document.getElementById('no-plan-area').classList.add('fade-in');
+            }
+        }
+
+        // 模拟扫描
+        function simulateScan() {
+            alert('📷 扫描功能演示\n\n在实际APP中，这里将调用相机进行OCR识别，自动提取效率手册中的目标计划。');
+        }
+
+        // 选择时间类型
+        function selectTimeType(type) {
+            document.querySelectorAll('.time-type-tag').forEach(el => el.classList.remove('selected'));
+            event.target.classList.add('selected');
+        }
+
+        // 选择阶段
+        function selectPeriod(period) {
+            document.querySelectorAll('.period-btn').forEach(el => el.classList.remove('selected'));
+            event.target.classList.add('selected');
+        }
+
+        // 添加目标
+        function addGoal() {
+            const input = document.getElementById('goalInput');
+            if (!input.value.trim()) {
+                alert('请输入目标内容');
+                return;
+            }
+            alert('✅ 目标已添加：' + input.value);
+            input.value = '';
+        }
+
+        // 切换开关
+        function toggleSwitch(el) {
+            el.classList.toggle('active');
+        }
+
+        // 生成计划
+        function generatePlan() {
+            const preview = document.getElementById('planPreview');
+            preview.classList.remove('hidden');
+            preview.classList.add('fade-in');
+            preview.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 确认计划
+        function confirmPlan() {
+            alert('🎉 计划已确认！\n\n欢迎来到闪耀星球，你的星际成长之旅正式开始！');
+        }
+
+        // 初始化
+        createStarfield();
+
+        // 获取URL参数中的人格类型（保留用于数据传递）
+        const urlParams = new URLSearchParams(window.location.search);
+        const personality = urlParams.get('personality') || 'fire';
+    </script>
+</body>
+</html>

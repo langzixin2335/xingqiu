@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>闪耀星球 - 欢迎回家</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0A0A0F;
+            --bg-card: #14141E;
+            --text-primary: #F0E6D3;
+            --text-secondary: #A89B8C;
+            --text-muted: #6B5D4D;
+            --accent-gold: #D4B96A;
+            --accent-gold-light: #E8C55A;
+            --accent-gold-dark: #B89B4A;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 星空背景动画 */
+        .starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0;
+            animation: twinkle var(--duration) ease-in-out infinite;
+            animation-delay: var(--delay);
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: var(--opacity); transform: scale(1); }
+        }
+
+        /* 流星动画 */
+        .shooting-star {
+            position: absolute;
+            width: 100px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+            opacity: 0;
+            animation: shoot 3s ease-out infinite;
+            animation-delay: var(--delay);
+        }
+
+        @keyframes shoot {
+            0% { opacity: 0; transform: translateX(0) translateY(0) rotate(-45deg); }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(300px) translateY(300px) rotate(-45deg); }
+        }
+
+        /* 中心星球 */
+        .planet-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .planet {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(212, 185, 106, 0.3), rgba(212, 185, 106, 0.1) 40%, transparent 70%);
+            box-shadow: 0 0 60px rgba(212, 185, 106, 0.2), 0 0 120px rgba(212, 185, 106, 0.1);
+            animation: planetPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes planetPulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
+
+        /* 页面容器 */
+        .welcome-container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 24px;
+        }
+
+        /* 品牌标志 */
+        .brand-logo {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 14px;
+            color: var(--accent-gold);
+            letter-spacing: 6px;
+            margin-bottom: 60px;
+            opacity: 0;
+            animation: fadeInDown 1s ease-out 0.5s forwards;
+        }
+
+        /* 主标题区域 */
+        .welcome-title {
+            text-align: center;
+            margin-bottom: 80px;
+        }
+
+        .welcome-greeting {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            opacity: 0;
+            animation: fadeInUp 1s ease-out 0.8s forwards;
+            line-height: 1.4;
+        }
+
+        .welcome-greeting span {
+            color: var(--accent-gold);
+        }
+
+        .welcome-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+            opacity: 0;
+            animation: fadeInUp 1s ease-out 1.2s forwards;
+        }
+
+        .welcome-subtitle p {
+            margin-bottom: 8px;
+        }
+
+        /* 装饰分隔线 */
+        .divider {
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+            margin: 0 auto 40px;
+            opacity: 0;
+            animation: fadeIn 1s ease-out 1.5s forwards;
+        }
+
+        /* 欢迎回家按钮 */
+        .welcome-btn {
+            width: 100%;
+            max-width: 280px;
+            padding: 18px 32px;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-light));
+            color: var(--bg-dark);
+            font-family: 'Noto Sans SC', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0;
+            animation: fadeInUp 1s ease-out 1.8s forwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .welcome-btn:hover::before {
+            left: 100%;
+        }
+
+        .welcome-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(212, 185, 106, 0.4);
+        }
+
+        .welcome-btn:active {
+            transform: translateY(0);
+        }
+
+        /* 底部提示 */
+        .bottom-hint {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: var(--text-muted);
+            opacity: 0;
+            animation: fadeIn 1s ease-out 2.2s forwards;
+            text-align: center;
+        }
+
+        /* 动画定义 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 粒子效果 */
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--accent-gold);
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- 星空背景 -->
+    <div class="starfield" id="starfield"></div>
+
+    <!-- 中心星球 -->
+    <div class="planet-container">
+        <div class="planet"></div>
+    </div>
+
+    <!-- 欢迎内容 -->
+    <div class="welcome-container">
+        <div class="brand-logo">✦ SHINING PLANET ✦</div>
+
+        <div class="welcome-title">
+            <div class="welcome-greeting">
+                欢迎回到<br><span>属于你的闪耀星球</span>
+            </div>
+            <div class="welcome-subtitle">
+                <p>在这里，你将遇见更好的自己</p>
+                <p>开启属于你的星际成长之旅</p>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <button class="welcome-btn" onclick="enterApp()">
+            欢迎回家
+        </button>
+
+        <div class="bottom-hint">
+            点击按钮，开启你的星际之旅
+        </div>
+    </div>
+
+    <script>
+        // 生成星空
+        function createStarfield() {
+            const starfield = document.getElementById('starfield');
+            const starCount = 100;
+
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
+                star.style.setProperty('--delay', Math.random() * 5 + 's');
+                star.style.setProperty('--opacity', Math.random() * 0.8 + 0.2);
+                starfield.appendChild(star);
+            }
+
+            // 添加流星
+            for (let i = 0; i < 3; i++) {
+                const shootingStar = document.createElement('div');
+                shootingStar.className = 'shooting-star';
+                shootingStar.style.left = Math.random() * 50 + '%';
+                shootingStar.style.top = Math.random() * 30 + '%';
+                shootingStar.style.setProperty('--delay', (i * 5 + Math.random() * 3) + 's');
+                starfield.appendChild(shootingStar);
+            }
+        }
+
+        // 进入应用
+        function enterApp() {
+            // 添加退出动画
+            const container = document.querySelector('.welcome-container');
+            container.style.transition = 'all 0.6s ease';
+            container.style.opacity = '0';
+            container.style.transform = 'scale(0.95)';
+
+            // 跳转到五行选择页面
+            setTimeout(() => {
+                window.location.href = 'wuxing-select.html';
+            }, 600);
+        }
+
+        // 初始化
+        createStarfield();
+    </script>
+</body>
+</html>
