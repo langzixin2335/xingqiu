@@ -34,11 +34,11 @@ function redirectByStep() {
     router.replace('/home')
   } else {
     const map = {
-      welcome: '/onboarding/welcome',
+      welcome: '/onboarding/wuxing-select',
       personality: '/onboarding/wuxing-select',
       plan: '/onboarding/plan-create',
     }
-    router.replace(map[step] || '/onboarding/welcome')
+    router.replace(map[step] || '/onboarding/wuxing-select')
   }
 }
 

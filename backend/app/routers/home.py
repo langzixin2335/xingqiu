@@ -21,6 +21,7 @@ from ..schemas import (
     DashboardOut,
     PlanetOut,
     PlanPhaseOut,
+    PlanSummaryOut,
     ProductOut,
     RewardOut,
     StreakOut,
@@ -89,22 +90,26 @@ def get_dashboard(
         for p in db.query(UserProduct).filter(UserProduct.user_id == current_user.id).all()
     }
 
-    plan = (
+    all_plans = (
         db.query(Plan)
         .filter(Plan.user_id == current_user.id)
         .order_by(Plan.id.desc())
-        .first()
+        .all()
     )
-    phases = []
-    if plan:
+    active_plan = next((p for p in all_plans if p.is_active), None) or (
+        all_plans[0] if all_plans else None
+    )
+
+    def _phases_for(plan_row: Plan) -> list[PlanPhaseOut]:
         goals = (
             db.query(PlanGoal)
-            .filter(PlanGoal.plan_id == plan.id)
+            .filter(PlanGoal.plan_id == plan_row.id)
             .order_by(PlanGoal.sort_order, PlanGoal.id)
             .all()
         )
+        result = []
         for idx, goal in enumerate(goals):
-            phases.append(
+            result.append(
                 PlanPhaseOut(
                     id=goal.id,
                     phase_label=goal.phase_label or goal.period,
@@ -112,9 +117,30 @@ def get_dashboard(
                     action=goal.action or "",
                     time_type=goal.time_type,
                     period=goal.period,
-                    progress_percent=_phase_progress(db, current_user.id, idx, len(goals)),
+                    progress_percent=_phase_progress(
+                        db, current_user.id, idx, len(goals)
+                    ),
                 )
             )
+        return result
+
+    plan_summaries: list[PlanSummaryOut] = []
+    for p in all_plans:
+        phases_p = _phases_for(p)
+        plan_summaries.append(
+            PlanSummaryOut(
+                id=p.id,
+                core_goal=p.core_goal,
+                goal_status=p.goal_status or "has-plan",
+                is_active=bool(p.is_active) if active_plan is None else p.id == active_plan.id,
+                created_at=p.created_at.isoformat() if p.created_at else None,
+                phase_count=len(phases_p),
+                phases=phases_p,
+            )
+        )
+
+    phases = _phases_for(active_plan) if active_plan else []
+    plan = active_plan
 
     streak_row = db.query(UserStreak).filter(UserStreak.user_id == current_user.id).first()
     streak = StreakOut(
@@ -135,6 +161,8 @@ def get_dashboard(
         planets=[planet_to_out(db, current_user.id, p) for p in planets],
         tasks=[task_to_out(t, current_user.id, db) for t in tasks],
         plan_phases=phases,
+        plans=plan_summaries,
+        active_plan_id=plan.id if plan else None,
         posts=[post_to_out(p, current_user.id, db) for p in posts],
         products=[
             ProductOut(

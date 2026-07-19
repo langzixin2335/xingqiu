@@ -299,16 +299,16 @@
                     <span class="icon">⚡</span>
                     能量补给站
                 </div>
-                <div class="card-desc">选择适合你的星球能量，加入计划自动追踪</div>
+                <div class="card-desc">你已经很用力了，歇一歇，充会电再出发</div>
                 
                 <!-- 一级分类：五种时间星球 -->
-                <div class="category-tabs">
-                    <div class="category-tab active" onclick="selectCategory(this, 'all')">全部</div>
-                    <div class="category-tab" onclick="selectCategory(this, 'survival')">🌿 生存星球</div>
-                    <div class="category-tab" onclick="selectCategory(this, 'money')">💎 赚钱星球</div>
-                    <div class="category-tab" onclick="selectCategory(this, 'beauty')">✨ 好看星球</div>
-                    <div class="category-tab" onclick="selectCategory(this, 'fun')">🎮 好玩星球</div>
-                    <div class="category-tab" onclick="selectCategory(this, 'flow')">🧘 心流星球</div>
+                <div class="time-types category-tabs" id="energyPlanetTabs">
+                    <div class="time-type-tag all is-lit selected" data-type="all" onclick="selectCategory(this, 'all')">全部</div>
+                    <div class="time-type-tag survival" data-type="survival" onclick="selectCategory(this, 'survival')">生存星球</div>
+                    <div class="time-type-tag money" data-type="money" onclick="selectCategory(this, 'money')">赚钱星球</div>
+                    <div class="time-type-tag beauty" data-type="beauty" onclick="selectCategory(this, 'beauty')">好看星球</div>
+                    <div class="time-type-tag fun" data-type="fun" onclick="selectCategory(this, 'fun')">好玩星球</div>
+                    <div class="time-type-tag flow" data-type="flow" onclick="selectCategory(this, 'flow')">心流星球</div>
                 </div>
 
                 <!-- 二级分类：学习阶段 -->
@@ -1016,7 +1016,7 @@
             // 更新页面标题
             const titles = {
                 'plan': '我的<span>星际旅程</span>',
-                'energy': '能量<span>补给站</span>',
+                'energy': '能量<span>中心</span>',
                 'reward': '成长<span>奖励中心</span>',
                 'member': '会员<span>中心</span>'
             };
@@ -1024,7 +1024,7 @@
             
             const subtitles = {
                 'plan': '在闪耀星球，每一天都是成长',
-                'energy': '选择适合你的课程与产品',
+                'energy': '成长的路上，有我陪你一起走',
                 'reward': '记录成长，奖励自己',
                 'member': '专属权益，助力成长'
             };

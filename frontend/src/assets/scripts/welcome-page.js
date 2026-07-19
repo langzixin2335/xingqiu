@@ -1,12 +1,22 @@
-import api from '../../api'
+import { useUserStore } from '../../stores/user'
+import { markWelcomePassed } from '../../utils/welcomeSession'
+
+function resolveNextPath(userStore, redirect) {
+  if (!userStore.isLoggedIn) {
+    return redirect
+      ? { path: '/auth/login', query: { redirect: String(redirect) } }
+      : '/auth/login'
+  }
+
+  const step = userStore.onboardingStep
+  if (step === 'done') return '/home'
+  if (step === 'plan') return '/onboarding/plan-create'
+  return '/onboarding/wuxing-select'
+}
 
 export function initWelcomeView(router) {
-  window.enterApp = async () => {
-    try {
-      await api.post('/user/onboarding', { onboarding_step: 'personality' })
-    } catch {
-      /* 离线演示 */
-    }
+  window.enterApp = () => {
+    markWelcomePassed()
 
     const container = document.querySelector('.welcome-container')
     if (container) {
@@ -14,8 +24,11 @@ export function initWelcomeView(router) {
       container.style.opacity = '0'
       container.style.transform = 'scale(0.95)'
     }
+
     setTimeout(() => {
-      router.push('/onboarding/wuxing-select')
+      const userStore = useUserStore()
+      const redirect = router.currentRoute.value.query.redirect
+      router.push(resolveNextPath(userStore, redirect))
     }, 600)
   }
 

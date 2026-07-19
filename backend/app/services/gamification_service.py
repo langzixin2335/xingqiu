@@ -230,22 +230,62 @@ def compute_planet_growth_speed(db: Session, user_id: int) -> dict[str, dict]:
 
 
 def get_weekend_review(db: Session, user_id: int) -> dict | None:
-    if date.today().weekday() not in (5, 6):
-        return None
-    week_start = (date.today() - timedelta(days=date.today().weekday())).isoformat()
+    """周复盘：工作日看上一周；周六日才解锁本周。"""
+    today = date.today()
+    weekday = today.weekday()  # 0=周一 ... 6=周日
+    is_weekend = weekday in (5, 6)
+    this_monday = today - timedelta(days=weekday)
+
+    if is_weekend:
+        week_start = this_monday
+        week_end = this_monday + timedelta(days=6)
+        period = "current"
+        title = "本周总结"
+        button_label = "查看本周总结"
+        current_week_locked = False
+    else:
+        week_start = this_monday - timedelta(days=7)
+        week_end = this_monday - timedelta(days=1)
+        period = "previous"
+        title = "上周总结"
+        button_label = "查看上周总结"
+        current_week_locked = True
+
+    start_s = week_start.isoformat()
+    end_s = week_end.isoformat()
     logs = (
         db.query(TaskCompletionLog)
         .filter(
             TaskCompletionLog.user_id == user_id,
-            TaskCompletionLog.completed_date >= week_start,
+            TaskCompletionLog.completed_date >= start_s,
+            TaskCompletionLog.completed_date <= end_s,
         )
         .all()
     )
     streak = _get_or_create_streak(db, user_id)
+    week_label = f"{week_start.month}月{week_start.day}日 - {week_end.month}月{week_end.day}日"
+    count = len(logs)
+
+    if is_weekend:
+        message = (
+            f"{week_label}：已完成 {count} 项任务，连续打卡 {streak.current_streak} 天。"
+            f"本周复盘已解锁，适合停下看看，再轻轻调整下周节奏。"
+        )
+    else:
+        message = (
+            f"上周（{week_label}）已完成 {count} 项任务，连续打卡 {streak.current_streak} 天。"
+            f"本周复盘将在周六解锁，工作日可先回看上周。"
+        )
+
     return {
-        "week_completions": len(logs),
+        "week_completions": count,
         "current_streak": streak.current_streak,
-        "message": f"本周已完成 {len(logs)} 项任务，连续打卡 {streak.current_streak} 天。周末适合复盘与调整下周节奏。",
+        "message": message,
+        "period": period,
+        "week_label": week_label,
+        "title": title,
+        "button_label": button_label,
+        "current_week_locked": current_week_locked,
     }
 
 

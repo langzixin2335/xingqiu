@@ -60,6 +60,36 @@ def migrate_db() -> None:
                     text("ALTER TABLE planet_progress ADD COLUMN energy_fragments INTEGER DEFAULT 0")
                 )
 
+        if "daily_reminders" in inspector.get_table_names():
+            reminder_cols = {col["name"] for col in inspector.get_columns("daily_reminders")}
+            if "deliver_mode" not in reminder_cols:
+                conn.execute(
+                    text("ALTER TABLE daily_reminders ADD COLUMN deliver_mode VARCHAR(10) DEFAULT 'text'")
+                )
+            if "voice_persona" not in reminder_cols:
+                conn.execute(
+                    text(
+                        "ALTER TABLE daily_reminders ADD COLUMN voice_persona VARCHAR(20) DEFAULT 'sister'"
+                    )
+                )
+            if "plan_id" not in reminder_cols:
+                conn.execute(text("ALTER TABLE daily_reminders ADD COLUMN plan_id INTEGER"))
+
+        if "plans" in inspector.get_table_names():
+            plan_cols = {col["name"] for col in inspector.get_columns("plans")}
+            if "is_active" not in plan_cols:
+                conn.execute(text("ALTER TABLE plans ADD COLUMN is_active BOOLEAN DEFAULT 1"))
+
+        if "daily_tasks" in inspector.get_table_names():
+            task_cols = {col["name"] for col in inspector.get_columns("daily_tasks")}
+            if "plan_id" not in task_cols:
+                conn.execute(text("ALTER TABLE daily_tasks ADD COLUMN plan_id INTEGER"))
+
+        if "task_templates" in inspector.get_table_names():
+            tpl_cols = {col["name"] for col in inspector.get_columns("task_templates")}
+            if "plan_id" not in tpl_cols:
+                conn.execute(text("ALTER TABLE task_templates ADD COLUMN plan_id INTEGER"))
+
         conn.commit()
 
         if "wechat_openid" not in columns:

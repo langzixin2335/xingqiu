@@ -19,7 +19,7 @@
                         <span class="icon">🪐</span>
                         点亮我的星球
                     </div>
-                    <div class="card-desc">收集星球能量碎片，点亮你的闪耀星球</div>
+                    <div class="card-desc">收集星球能量碎片，点亮你的闪耀星球解锁奖励</div>
                     
                     <div class="planet-orbit" id="planetOrbit"></div>
                 </div>
@@ -29,7 +29,14 @@
                     <div class="card-title" id="todayActionsTitle">
                         <span class="icon">📋</span>
                         今日行动
-                        <button type="button" class="daily-curve-btn" onclick="openDailyCompletionCurve()" title="查看每日行动完成曲线">每日完成曲线</button>
+                        <div class="today-actions-tools">
+                            <button type="button" class="daily-quote-btn" id="dailyQuoteBtn" onclick="openTodayGrowthQuote()" title="查收今日成长语录">
+                                <span class="daily-quote-icon" aria-hidden="true">💌</span>
+                                查收今日成长语录
+                                <span class="daily-quote-dot hidden" id="dailyQuoteDot" aria-hidden="true"></span>
+                            </button>
+                            <button type="button" class="daily-curve-btn" onclick="openDailyCompletionCurve()" title="查看每日行动完成曲线">每日完成曲线</button>
+                        </div>
                     </div>
                     <div class="card-desc">完成所有行动，获得星球能量碎片</div>
                     
@@ -56,14 +63,20 @@
                         <span id="streakBadge" class="streak-badge" style="margin-left: auto; font-size: 12px;"></span>
                     </div>
                     <div class="card-desc" id="planCoreGoalDesc">查看你的长期成长路径与当前阶段</div>
+                    <div class="plan-switcher" id="planSwitcher"></div>
                     <div class="plan-phase-timeline" id="planPhaseTimeline"></div>
+                    <button type="button" class="btn btn-secondary plan-add-btn" id="btnAddAnotherPlan" onclick="addAnotherPlan()">＋ 再订一条计划</button>
                 </div>
 
-                <!-- 周末复盘 -->
+                <!-- 周复盘：工作日看上周，周六日解锁本周 -->
                 <div class="card weekend-review-card hidden" id="weekendReviewCard">
-                    <div class="card-title"><span class="icon">📝</span> 周末复盘</div>
+                    <div class="card-title">
+                        <span class="icon">📝</span>
+                        <span id="weekendReviewTitle">周复盘</span>
+                        <span class="weekend-review-lock-tag hidden" id="weekendReviewLockTag">本周待解锁</span>
+                    </div>
                     <div class="weekend-review-text" id="weekendReviewText"></div>
-                    <button class="btn btn-secondary weekend-review-btn" onclick="openWeekendReview()">查看本周总结</button>
+                    <button class="btn btn-secondary weekend-review-btn" id="weekendReviewBtn" onclick="openWeekendReview()">查看上周总结</button>
                 </div>
     
                 <!-- 星球社区 -->
@@ -86,26 +99,38 @@
     
             <!-- ========== Tab 3: 能量中心 ========== -->
             <div class="tab-content" id="tab-energy">
-                <!-- 上半：AI 对话 -->
+                <!-- 上半：你的伙伴对话（文字 + 语音） -->
                 <div class="card energy-chat-card">
+                    <div class="companion-header" id="companionHeader">
+                        <img class="companion-header-avatar" id="companionHeaderAvatar" src="/images/avatar/sailor-fire-portrait.png" alt="你的伙伴">
+                        <div class="companion-header-text">
+                            <div class="companion-header-name" id="companionHeaderName">你的伙伴·星光</div>
+                            <div class="companion-header-desc" id="companionHeaderDesc">文字聊聊，也能语音陪你说几句</div>
+                        </div>
+                        <button type="button" class="companion-voice-toggle" id="companionVoiceToggle" onclick="toggleCompanionVoiceSpeak()" aria-pressed="true" title="回复时朗读">🔊</button>
+                    </div>
                     <div class="energy-chat" id="energyChat">
                         <div class="energy-chat-messages" id="energyChatMessages">
-                            <div class="energy-chat-msg assistant">
-                                <div class="energy-chat-avatar">🪐</div>
-                                <div class="energy-chat-bubble">想补充哪个星球的能量，可以把你的想法告诉我，我帮你推荐；</div>
+                            <div class="energy-chat-msg assistant" id="companionGreetingMsg">
+                                <div class="energy-chat-avatar companion-avatar-img">
+                                    <img id="companionGreetingAvatar" src="/images/avatar/sailor-fire-portrait.png" alt="">
+                                </div>
+                                <div class="energy-chat-bubble" id="companionGreetingBubble">我是你的伙伴。想补充哪颗星球的能量，都跟我说一声；也可以按住麦克风跟我说话。</div>
                             </div>
                         </div>
                         <div class="energy-chat-composer">
+                            <button type="button" class="energy-chat-mic" id="energyChatMicBtn" onclick="toggleCompanionVoiceInput()" aria-label="语音对话" title="语音对话">🎤</button>
                             <input
                                 type="text"
                                 class="energy-chat-input"
                                 id="energyChatInput"
-                                placeholder="请输入你的问题"
+                                placeholder="跟你的伙伴说点什么…"
                                 maxlength="500"
                                 onkeypress="submitEnergyChat(event)"
                             >
                             <button type="button" class="energy-chat-send" id="energyChatSendBtn" onclick="sendEnergyChat()">发送</button>
                         </div>
+                        <div class="companion-voice-hint" id="companionVoiceHint">点麦克风说话，她听完会温柔回答；也可打开喇叭让她读出来</div>
                     </div>
                 </div>
 
@@ -115,16 +140,16 @@
                         <span class="icon">⚡</span>
                         能量补给站
                     </div>
-                    <div class="card-desc">选择适合你的星球能量，加入计划自动追踪</div>
+                    <div class="card-desc">你已经很用力了，歇一歇，充会电再出发</div>
                     
-                    <!-- 一级分类：五种时间星球 -->
-                    <div class="category-tabs">
-                        <div class="category-tab active" onclick="selectCategory(this, 'all')">全部</div>
-                        <div class="category-tab" onclick="selectCategory(this, 'survival')">🌿 生存星球</div>
-                        <div class="category-tab" onclick="selectCategory(this, 'money')">💎 赚钱星球</div>
-                        <div class="category-tab" onclick="selectCategory(this, 'beauty')">✨ 好看星球</div>
-                        <div class="category-tab" onclick="selectCategory(this, 'fun')">🎮 好玩星球</div>
-                        <div class="category-tab" onclick="selectCategory(this, 'flow')">🧘 心流星球</div>
+                    <!-- 一级分类：五种时间星球（与制定计划页同款标签） -->
+                    <div class="time-types category-tabs" id="energyPlanetTabs">
+                        <div class="time-type-tag all is-lit selected" data-type="all" onclick="selectCategory(this, 'all')">全部</div>
+                        <div class="time-type-tag survival" data-type="survival" onclick="selectCategory(this, 'survival')">生存星球</div>
+                        <div class="time-type-tag money" data-type="money" onclick="selectCategory(this, 'money')">赚钱星球</div>
+                        <div class="time-type-tag beauty" data-type="beauty" onclick="selectCategory(this, 'beauty')">好看星球</div>
+                        <div class="time-type-tag fun" data-type="fun" onclick="selectCategory(this, 'fun')">好玩星球</div>
+                        <div class="time-type-tag flow" data-type="flow" onclick="selectCategory(this, 'flow')">心流星球</div>
                     </div>
     
                     <!-- 二级分类：学习阶段 -->
@@ -757,14 +782,26 @@
         <div class="invite-modal-overlay hidden" id="weekendSummaryOverlay" onclick="if(event.target===this)closeWeekendReview()">
             <div class="invite-modal-card weekend-summary-modal-card">
                 <div class="weekend-summary-modal-top">
-                    <div class="invite-modal-title">本周总结</div>
+                    <div class="invite-modal-title" id="weekendSummaryModalTitle">上周总结</div>
                     <button type="button" class="weekend-summary-close" onclick="closeWeekendReview()" aria-label="关闭">×</button>
                 </div>
                 <div class="weekend-summary-scroll">
-                    <section class="growth-report" id="weekendGrowthReport" aria-label="本周个人成长分析报告"></section>
+                    <section class="growth-report" id="weekendGrowthReport" aria-label="周复盘个人成长分析报告"></section>
                 </div>
                 <div class="daily-summary-actions" style="margin-top: 12px;">
                     <button type="button" class="btn btn-secondary" onclick="closeWeekendReview()">关闭</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 查收今日成长语录 -->
+        <div class="invite-modal-overlay hidden" id="dailyQuoteOverlay" onclick="if(event.target===this)closeTodayGrowthQuote()">
+            <div class="invite-modal-card daily-quote-modal-card" onclick="event.stopPropagation()">
+                <div class="invite-modal-title">今日成长语录</div>
+                <div class="card-desc daily-quote-modal-desc">给你的一句温柔提醒，慢慢看就好</div>
+                <div class="daily-quote-body" id="dailyQuoteBody"></div>
+                <div class="daily-summary-actions" style="margin-top: 16px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeTodayGrowthQuote()">收好了</button>
                 </div>
             </div>
         </div>
@@ -901,31 +938,63 @@
             </div>
         </div>
 
-        <!-- 奖励礼包 -->
+        <!-- 中心人物换装 -->
+        <div class="invite-modal-overlay hidden" id="avatarDressOverlay" onclick="if(event.target===this)closeAvatarDressModal()">
+            <div class="invite-modal-card avatar-dress-modal-card" onclick="event.stopPropagation()">
+                <div class="invite-modal-title">去换装</div>
+                <div class="card-desc avatar-dress-modal-desc">先选人物，再微调外观；宠物暂未解锁，上方实时预览</div>
+                <div class="avatar-dress-layout">
+                    <div class="avatar-dress-preview-wrap">
+                        <div class="avatar-dress-preview" id="avatarDressPreview">
+                            <div class="avatar-figure aura-gold" id="avatarDressPreviewFigure">
+                                <img class="avatar-img" src="/images/avatar/sailor-idle.png?v4" alt="换装预览" draggable="false" data-pose="idle" data-base-src="/images/avatar/sailor-idle.png?v4">
+                            </div>
+                        </div>
+                        <div class="avatar-dress-preview-hint">实时预览</div>
+                    </div>
+                    <div class="avatar-dress-panels" id="avatarDressPanels"></div>
+                </div>
+                <div class="avatar-dress-actions">
+                    <button type="button" class="btn btn-secondary" onclick="resetAvatarDressDraft()">恢复默认</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeAvatarDressModal()">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmAvatarDress()">保存形象</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 奖励礼包（与制定计划页弹窗一致） -->
         <div class="invite-modal-overlay hidden" id="rewardPackModalOverlay">
             <div class="invite-modal-card reward-pack-modal-card">
-                <div class="invite-modal-title" id="rewardPackModalTitle">奖励礼包</div>
+                <div class="invite-modal-title" id="rewardPackModalTitle">完成即可得奖励礼包</div>
                 <div class="reward-pack-section">
-                    <div class="reward-pack-section-title">默认奖励</div>
+                    <div class="reward-pack-section-title">随机小惊喜（系统默认）</div>
                     <div class="reward-pack-list" id="rewardPackDefaultList"></div>
                 </div>
                 <div class="reward-pack-section">
-                    <div class="reward-pack-section-title">悦己奖励</div>
+                    <div class="reward-pack-section-title">悦己奖励（自定义选项）</div>
                     <div class="reward-input-area reward-pack-config">
-                        <input type="text" class="input-field" placeholder="奖励名称（例如：买一件新衣服）" id="packRewardName">
+                        <input type="text" class="input-field" placeholder="奖励名称（例如：一顿喜欢的brunch）" id="packRewardName">
                         <div class="reward-pack-desc-block">
                             <div class="reward-pack-desc-head">
-                                <span class="reward-pack-desc-label">奖励描述/去挑选</span>
+                                <span class="reward-pack-desc-label">写点心意 / 去挑选</span>
                                 <div class="reward-shop-apps" aria-label="去挑选">
+                                    <button type="button" class="reward-shop-app taobao" onclick="openShopPick('taobao')" title="淘宝去挑选">
+                                        <img class="reward-shop-logo" src="/images/brands/taobao-logo.png" alt="淘宝" width="36" height="36">
+                                        <span class="reward-shop-name">淘宝</span>
+                                    </button>
+                                    <button type="button" class="reward-shop-app dewu" onclick="openShopPick('dewu')" title="得物去挑选">
+                                        <img class="reward-shop-logo" src="/images/brands/dewu-logo.png" alt="得物" width="36" height="36">
+                                        <span class="reward-shop-name">得物</span>
+                                    </button>
                                     <button type="button" class="reward-shop-app smzdm" onclick="openShopPick('smzdm')" title="什么值得买去挑选">
                                         <img class="reward-shop-logo" src="/images/brands/smzdm-logo.png" alt="什么值得买" width="36" height="36">
-                                        <span class="reward-shop-name">什么值得买</span>
+                                        <span class="reward-shop-name">值得买</span>
                                     </button>
                                 </div>
                             </div>
                             <textarea class="input-field" placeholder="奖励描述/去挑选..." id="packRewardDesc"></textarea>
                         </div>
-                        <div class="reward-pack-condition-label">达成条件</div>
+                        <div class="reward-pack-condition-label">达成标准（允许给自己留点待完成）</div>
                         <div class="form-row reward-pack-condition-row">
                             <select class="input-field" id="packRewardConditionType" onchange="syncPackRewardConditionUi()">
                                 <option value="completion_rate">完成率达成</option>
@@ -943,12 +1012,12 @@
                                 >
                                 <span class="reward-pack-condition-unit" id="packRewardConditionUnit">%</span>
                             </div>
-                            <button class="add-btn" style="margin-top: 0; width: auto; padding: 10px 16px;" onclick="addPackReward()">添加奖励</button>
+                            <button class="add-btn" type="button" onclick="addPackReward()">添加奖励</button>
                         </div>
                     </div>
                     <div class="reward-pack-list" id="rewardPackCustomList"></div>
                 </div>
-                <button type="button" class="btn btn-primary time-goal-close-btn" onclick="closeRewardPackModal()">关闭</button>
+                <button type="button" class="btn btn-primary reward-pack-close-btn" onclick="closeRewardPackModal()">关闭</button>
             </div>
         </div>
 

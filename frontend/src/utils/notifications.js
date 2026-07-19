@@ -3,6 +3,10 @@ import api from '../api'
 
 const DAY_MAP = { 周一: 1, 周二: 2, 周三: 3, 周四: 4, 周五: 5, 周六: 6, 周日: 7 }
 
+const POOL_PREFIX = '__POOL__::'
+const AI_PREFIX = '__AI__::'
+const PHRASE_SEP = '||'
+
 function parseRepeatDays(repeatDays) {
   if (!repeatDays) return [1, 2, 3, 4, 5]
   return repeatDays.split(',').map((n) => parseInt(n, 10)).filter(Boolean)
@@ -23,6 +27,56 @@ function nextTriggerDate(remindTime, weekday) {
 async function getLocalNotifications() {
   const mod = await import('@capacitor/local-notifications')
   return mod.LocalNotifications
+}
+
+export function encodeEncourageTitle(mode, phrases) {
+  const cleaned = (phrases || []).map((p) => String(p || '').trim()).filter(Boolean)
+  if (!cleaned.length) return ''
+  if (mode === 'pool') return `${POOL_PREFIX}${cleaned.join(PHRASE_SEP)}`
+  if (mode === 'ai') return `${AI_PREFIX}${cleaned.join(PHRASE_SEP)}`
+  return cleaned[0]
+}
+
+export function decodeEncourageTitle(raw) {
+  const title = String(raw || '').trim()
+  if (!title) return { mode: 'single', phrases: [], display: '', preview: '' }
+
+  if (title.startsWith(POOL_PREFIX)) {
+    const phrases = title
+      .slice(POOL_PREFIX.length)
+      .split(PHRASE_SEP)
+      .map((p) => p.trim())
+      .filter(Boolean)
+    return {
+      mode: 'pool',
+      phrases,
+      display: `多句随机 · 共${phrases.length}句`,
+      preview: phrases[0] || '',
+    }
+  }
+
+  if (title.startsWith(AI_PREFIX)) {
+    const phrases = title
+      .slice(AI_PREFIX.length)
+      .split(PHRASE_SEP)
+      .map((p) => p.trim())
+      .filter(Boolean)
+    return {
+      mode: 'ai',
+      phrases,
+      display: `帮你生成 · 共${phrases.length}句`,
+      preview: phrases[0] || '',
+    }
+  }
+
+  return { mode: 'single', phrases: [title], display: title, preview: title }
+}
+
+export function pickEncourageBody(raw) {
+  const { phrases } = decodeEncourageTitle(raw)
+  if (!phrases.length) return '今天也值得被温柔对待'
+  if (phrases.length === 1) return phrases[0]
+  return phrases[Math.floor(Math.random() * phrases.length)]
 }
 
 export async function requestNotificationPermission() {
@@ -62,8 +116,8 @@ export async function scheduleRemindersFromApi() {
       for (const wd of weekdays) {
         notifications.push({
           id: reminder.id * 10 + wd,
-          title: '闪耀星球 · 每日提醒',
-          body: reminder.title,
+          title: '闪耀星球 · 每日鼓励',
+          body: pickEncourageBody(reminder.title),
           schedule: { at: nextTriggerDate(reminder.remind_time, wd), allowWhileIdle: true },
           sound: undefined,
         })
@@ -92,22 +146,40 @@ function normalizeRemindTime(raw) {
   return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`
 }
 
-export function readDailyReminderForm(root) {
+export function readDailyReminderForm(root, options = {}) {
   const form = root?.querySelector('.daily-goal-form')
   if (!form) return null
 
-  const inputs = [...form.querySelectorAll('input.input-field')]
-  const title = inputs[0]?.value?.trim()
-  const remindTime = normalizeRemindTime(inputs[1]?.value || '07:00')
-  const typeSelect = form.querySelector('select.input-field')
-  const typeText = typeSelect?.selectedOptions?.[0]?.text || '生存星球'
-  const typeMap = {
-    生存星球: 'survival',
-    赚钱星球: 'money',
-    好看星球: 'beauty',
-    好玩星球: 'fun',
-    心流星球: 'flow',
+  const mode = options.mode || form.dataset.encourageMode || 'single'
+  const poolPhrases = options.poolPhrases || []
+  const aiPhrases = options.aiPhrases || []
+
+  let title = ''
+  if (mode === 'single') {
+    title = encodeEncourageTitle('single', [
+      form.querySelector('#encourageSingleInput')?.value?.trim() || '',
+    ])
+  } else if (mode === 'pool') {
+    title = encodeEncourageTitle('pool', poolPhrases)
+  } else if (mode === 'ai') {
+    title = encodeEncourageTitle('ai', aiPhrases)
   }
+
+  const remindTime = normalizeRemindTime(
+    form.querySelector('#encourageTimeInput')?.value || '07:00'
+  )
+  const activePlanet =
+    options.timeType ||
+    form.querySelector('#encouragePlanetOptions .time-type-tag.selected')?.dataset?.type ||
+    'survival'
+  const timeType = ['survival', 'money', 'beauty', 'fun', 'flow'].includes(activePlanet)
+    ? activePlanet
+    : 'survival'
+  const deliverBox = form.querySelector('#encourageDeliverModeOptions')
+  const deliverModeRaw = deliverBox?.dataset.deliverMode || 'text'
+  const deliverMode = deliverModeRaw === 'voice' ? 'voice' : 'text'
+  const voicePersonaRaw = deliverBox?.dataset.voicePersona || 'sister'
+  const voicePersona = voicePersonaRaw === 'brother' ? 'brother' : 'sister'
 
   const selectedDays = [...form.querySelectorAll('.repeat-option.selected')]
     .map((el) => DAY_MAP[el.textContent.trim()])
@@ -121,8 +193,10 @@ export function readDailyReminderForm(root) {
 
   return {
     title,
-    time_type: typeMap[typeText] || 'survival',
+    time_type: timeType,
     remind_time: remindTime,
+    deliver_mode: deliverMode,
+    voice_persona: deliverMode === 'voice' ? voicePersona : 'sister',
     repeat_days: (selectedDays.length ? selectedDays : [1, 2, 3, 4, 5]).join(','),
     holiday_skip: holidaySkip,
     smart_enabled: smartEnabled,

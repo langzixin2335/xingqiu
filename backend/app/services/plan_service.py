@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from ..models import DailyReminder, DailyTask, PlanetProgress, PlanGoal
+from ..models import DailyReminder, DailyTask, PlanetProgress, Plan, PlanGoal
 from .task_rollover_service import PHOTO_TYPES, sync_task_templates, today_str
 
 TIME_LABELS = {
@@ -18,13 +18,27 @@ def sync_user_plan_data(
     goals: list[PlanGoal] | list,
     reminders: list | None = None,
     daily_tasks: list | None = None,
+    plan_id: int | None = None,
 ) -> None:
-    db.query(DailyTask).filter(DailyTask.user_id == user_id).delete()
-    db.query(DailyReminder).filter(DailyReminder.user_id == user_id).delete()
-
+    """按 plan_id 增量同步任务/提醒/模板，不清空用户其他计划的数据。"""
     today = today_str()
+
+    if plan_id is not None:
+        db.query(DailyTask).filter(
+            DailyTask.user_id == user_id,
+            DailyTask.plan_id == plan_id,
+        ).delete()
+        db.query(DailyReminder).filter(
+            DailyReminder.user_id == user_id,
+            DailyReminder.plan_id == plan_id,
+        ).delete()
+    else:
+        # 兼容旧调用：无 plan_id 时仍整户替换（仅遗留路径）
+        db.query(DailyTask).filter(DailyTask.user_id == user_id).delete()
+        db.query(DailyReminder).filter(DailyReminder.user_id == user_id).delete()
+
     if daily_tasks:
-        sync_task_templates(db, user_id, daily_tasks)
+        sync_task_templates(db, user_id, daily_tasks, plan_id=plan_id)
         for idx, item in enumerate(daily_tasks[:8]):
             if hasattr(item, "title"):
                 title = item.title
@@ -42,6 +56,7 @@ def sync_user_plan_data(
             db.add(
                 DailyTask(
                     user_id=user_id,
+                    plan_id=plan_id,
                     title=title,
                     time_type=time_type,
                     scheduled_label=scheduled,
@@ -65,6 +80,8 @@ def sync_user_plan_data(
                         "title": title,
                         "time_type": time_type,
                         "remind_time": remind_time,
+                        "deliver_mode": "text",
+                        "voice_persona": "sister",
                         "repeat_days": repeat_days,
                         "holiday_skip": False,
                         "smart_enabled": True,
@@ -76,17 +93,46 @@ def sync_user_plan_data(
             db.add(
                 DailyReminder(
                     user_id=user_id,
+                    plan_id=plan_id,
                     title=item.title if hasattr(item, "title") else item["title"],
                     time_type=item.time_type if hasattr(item, "time_type") else item["time_type"],
                     remind_time=item.remind_time if hasattr(item, "remind_time") else item.get("remind_time", "07:00"),
+                    deliver_mode=(
+                        item.deliver_mode
+                        if hasattr(item, "deliver_mode")
+                        else item.get("deliver_mode", "text")
+                    ),
+                    voice_persona=(
+                        item.voice_persona
+                        if hasattr(item, "voice_persona")
+                        else item.get("voice_persona", "sister")
+                    ),
                     repeat_days=item.repeat_days if hasattr(item, "repeat_days") else item.get("repeat_days", "1,2,3,4,5"),
                     holiday_skip=item.holiday_skip if hasattr(item, "holiday_skip") else item.get("holiday_skip", False),
                     smart_enabled=item.smart_enabled if hasattr(item, "smart_enabled") else item.get("smart_enabled", True),
                 )
             )
 
-    _sync_planets(db, user_id, goals)
+    all_goals = (
+        db.query(PlanGoal)
+        .join(Plan, Plan.id == PlanGoal.plan_id)
+        .filter(Plan.user_id == user_id)
+        .all()
+    )
+    _sync_planets(db, user_id, all_goals or goals)
     db.commit()
+
+
+def delete_plan_data(db: Session, user_id: int, plan_id: int) -> None:
+    db.query(DailyTask).filter(DailyTask.user_id == user_id, DailyTask.plan_id == plan_id).delete()
+    db.query(DailyReminder).filter(
+        DailyReminder.user_id == user_id, DailyReminder.plan_id == plan_id
+    ).delete()
+    from ..models import TaskTemplate
+
+    db.query(TaskTemplate).filter(
+        TaskTemplate.user_id == user_id, TaskTemplate.plan_id == plan_id
+    ).delete()
 
 
 def _sync_planets(db: Session, user_id: int, goals: list) -> None:

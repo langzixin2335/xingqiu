@@ -26,10 +26,6 @@
             <button class="welcome-btn" onclick="enterApp()">
                 欢迎回家
             </button>
-    
-            <div class="bottom-hint">
-                点击按钮，开启你的星际之旅
-            </div>
         </div>
     
         

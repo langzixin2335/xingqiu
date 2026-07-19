@@ -1,7 +1,15 @@
 import api from '../../api'
 import { isNativeApp, takeTaskPhoto } from '../../utils/camera.js'
-import { scheduleRemindersFromApi } from '../../utils/notifications.js'
+import {
+  createCompanionSpeechRecognition,
+  getCompanion,
+  pickCompanionCheckinLine,
+  speakCompanionText,
+  stopCompanionSpeech,
+} from '../../utils/companion.js'
+import { decodeEncourageTitle, scheduleRemindersFromApi } from '../../utils/notifications.js'
 import { initPushNotifications, unregisterPushNotifications } from '../../utils/push.js'
+import { showToast } from '../../utils/ui.js'
 import { useUserStore } from '../../stores/user'
 import {
   renderBadges,
@@ -18,7 +26,31 @@ import {
   renderWeekendReview,
   syncMonthlyGrowthReportGate,
 } from './home-render.js'
-import { updateAvatarPanel } from './avatar-character.js'
+import {
+  getCurrentAvatarLook,
+  previewAvatarLook,
+  refreshAvatarLook,
+  renderDressPreviewFigure,
+  setCurrentAvatarLook,
+  syncAvatarLookFromPersonality,
+  updateAvatarPanel,
+} from './avatar-character.js'
+import {
+  ACCESSORIES,
+  ACCENT_SWATCHES,
+  AURAS,
+  CHARACTERS,
+  HAIR_SWATCHES,
+  LOOK_PRESETS,
+  OUTFIT_SWATCHES,
+  PETS,
+  SKIN_SWATCHES,
+  characterIdFromPersonality,
+  findPresetId,
+  lookForCharacter,
+  normalizeLook,
+  saveAvatarLook,
+} from './avatar-look.js'
 
 let displayedBadges = []
 let currentCategory = 'all'
@@ -180,6 +212,13 @@ function showPandoraBox(planetType) {
   document.getElementById('pandoraBoxOverlay')?.classList.remove('hidden')
 }
 
+function celebrateWithCompanion() {
+  const userStore = useUserStore()
+  const companion = getCompanion(userStore.personality)
+  const line = pickCompanionCheckinLine(userStore.personality)
+  showToast(`${companion.name}：${line}`, { duration: 2600 })
+}
+
 function handleTaskEffects(effects) {
   if (!effects) return
   if (effects.planet_type) flashPlanet(effects.planet_type)
@@ -191,6 +230,7 @@ function handleTaskEffects(effects) {
     }
     renderProgress(dashboardData)
   }
+  celebrateWithCompanion()
   showUnlockToast(effects.badges_unlocked, '🎖️ 解锁新勋章')
   showUnlockToast(effects.rewards_unlocked, '🎁 解锁新奖励')
   if (effects.rewards_unlocked?.length) {
@@ -304,6 +344,15 @@ async function loadDashboard() {
       const firstOpen = tasks.find((t) => !t.completed) || tasks[0]
       focusedTaskId = firstOpen?.id ?? null
     }
+    // 首页中心人物：默认=五行所选；用户换装锁定后不再覆盖
+    const personality = data.user?.personality || useUserStore().personality
+    if (personality) {
+      const userStore = useUserStore()
+      if (userStore.personality !== personality) {
+        userStore.setPersonality?.(personality)
+      }
+      syncAvatarLookFromPersonality(personality)
+    }
     renderPlanets(data.planets, tasks, focusedTaskId)
     renderTasks(tasks, {
       focusTaskId: focusedTaskId,
@@ -312,7 +361,12 @@ async function loadDashboard() {
         updateAvatarPanel(dashboardData?.tasks || [], focusedTaskId)
       },
     })
-    renderPlanPhases(data.plan_phases, data.core_goal)
+    renderPlanPhases(
+      data.plan_phases,
+      data.core_goal,
+      data.plans || [],
+      data.active_plan_id
+    )
     renderStreak(data.streak)
     renderWeekendReview(data.weekend_review)
     renderCommunity(data.posts, {
@@ -434,6 +488,9 @@ export function initMainHomeView(router) {
     startCommunityAutoScroll()
   }
 
+  // 中心人物默认跟随五行人格所选战士
+  syncAvatarLookFromPersonality(useUserStore().personality)
+
   loadDashboard()
 
   // App 内不再显示下载入口
@@ -456,7 +513,7 @@ export function initMainHomeView(router) {
     if (confirm('确定要退出登录吗？')) {
       await unregisterPushNotifications()
       useUserStore().logout()
-      router.push('/auth/login')
+      router.push('/welcome')
     }
   }
 
@@ -468,13 +525,13 @@ export function initMainHomeView(router) {
 
     const titles = {
       plan: '我的<span>星际旅程</span>',
-      energy: '能量<span>补给站</span>',
+      energy: '能量<span>中心</span>',
       reward: '成长<span>奖励</span>',
       member: '会员<span>中心</span>',
     }
     const subtitles = {
       plan: '在闪耀星球，每一天都是成长',
-      energy: '选择适合你的课程与产品',
+      energy: '成长的路上，有我陪你一起走',
       reward: '记录成长，奖励自己',
       member: '专属权益，助力成长',
     }
@@ -498,6 +555,122 @@ export function initMainHomeView(router) {
   window.closeDailyCompletionCurve = () => {
     document.getElementById('dailyCurveOverlay')?.classList.add('hidden')
   }
+
+  const PLANET_QUOTE_LABEL = {
+    survival: '生存',
+    money: '赚钱',
+    beauty: '好看',
+    fun: '好玩',
+    flow: '心流',
+  }
+
+  function todayKey() {
+    const d = new Date()
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+
+  function quoteSeenStorageKey() {
+    return `growth_quote_seen_${todayKey()}`
+  }
+
+  function hasSeenTodayGrowthQuote() {
+    try {
+      return localStorage.getItem(quoteSeenStorageKey()) === '1'
+    } catch {
+      return false
+    }
+  }
+
+  function markTodayGrowthQuoteSeen() {
+    try {
+      localStorage.setItem(quoteSeenStorageKey(), '1')
+    } catch {
+      /* ignore */
+    }
+    document.getElementById('dailyQuoteDot')?.classList.add('hidden')
+  }
+
+  function pickStableDailyPhrase(phrases, salt = '') {
+    const list = (phrases || []).map((p) => String(p || '').trim()).filter(Boolean)
+    if (!list.length) return '今天也值得被温柔对待'
+    if (list.length === 1) return list[0]
+    const key = `${todayKey()}::${salt}`
+    let hash = 0
+    for (let i = 0; i < key.length; i += 1) {
+      hash = (hash * 31 + key.charCodeAt(i)) >>> 0
+    }
+    return list[hash % list.length]
+  }
+
+  function syncDailyQuoteDot(hasReminders) {
+    const dot = document.getElementById('dailyQuoteDot')
+    if (!dot) return
+    const show = !!hasReminders && !hasSeenTodayGrowthQuote()
+    dot.classList.toggle('hidden', !show)
+  }
+
+  async function loadTodayGrowthQuotes() {
+    const companion = getCompanion(useUserStore().personality)
+    try {
+      const { data } = await api.get('/reminders')
+      const reminders = Array.isArray(data) ? data : []
+      syncDailyQuoteDot(reminders.length > 0)
+      if (!reminders.length) {
+        return {
+          empty: true,
+          html: `<div class="daily-quote-empty">还没有设置成长语录。<br>去制定计划时写下「每日爱的鼓励」，明天就能在这里查收啦。</div>`,
+        }
+      }
+      const cards = reminders.map((r) => {
+        const decoded = decodeEncourageTitle(r.title)
+        const text = pickStableDailyPhrase(decoded.phrases, String(r.id || r.title || ''))
+        const planet = PLANET_QUOTE_LABEL[r.time_type] || '成长'
+        const time = r.remind_time || ''
+        return `
+          <div class="daily-quote-card">
+            <div class="daily-quote-meta">
+              <img src="${companion.avatar}" alt="">
+              <span>${companion.display || companion.name}</span>
+              <span>· ${planet}</span>
+              ${time ? `<span>· ${time}</span>` : ''}
+            </div>
+            <div class="daily-quote-text">「${String(text)
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')}」</div>
+          </div>`
+      })
+      return { empty: false, html: cards.join('') }
+    } catch {
+      syncDailyQuoteDot(false)
+      return {
+        empty: true,
+        html: `<div class="daily-quote-empty">暂时没能取到语录，稍后再试一次吧。</div>`,
+      }
+    }
+  }
+
+  window.openTodayGrowthQuote = async () => {
+    const body = document.getElementById('dailyQuoteBody')
+    const overlay = document.getElementById('dailyQuoteOverlay')
+    if (!overlay || !body) return
+    body.innerHTML = `<div class="daily-quote-empty">正在为你翻开今日那一页…</div>`
+    overlay.classList.remove('hidden')
+    const result = await loadTodayGrowthQuotes()
+    body.innerHTML = result.html
+    if (!result.empty) markTodayGrowthQuoteSeen()
+  }
+
+  window.closeTodayGrowthQuote = () => {
+    document.getElementById('dailyQuoteOverlay')?.classList.add('hidden')
+  }
+
+  // 进入首页时预检红点
+  loadTodayGrowthQuotes().catch(() => {})
 
   window.confirmTaskComplete = (btn) => {
     const taskItem = btn.closest('.task-item')
@@ -738,6 +911,12 @@ export function initMainHomeView(router) {
     const overlay = document.getElementById('weekendSummaryOverlay')
     if (!overlay) return
 
+    const review = dashboardData.weekend_review
+    const modalTitle = document.getElementById('weekendSummaryModalTitle')
+    if (modalTitle) {
+      modalTitle.textContent = review.title || (review.period === 'current' ? '本周总结' : '上周总结')
+    }
+
     const planets = dashboardData.planets || []
     const types = ['survival', 'money', 'beauty', 'fun', 'flow']
     const rates = types.map((type) => {
@@ -747,7 +926,20 @@ export function initMainHomeView(router) {
       return maxLevel ? Math.round((level / maxLevel) * 100) : 0
     })
     const overall = Math.round(rates.reduce((a, b) => a + b, 0) / (rates.length || 1))
-    renderGrowthReport(dashboardData, overall, 'weekendGrowthReport')
+    renderGrowthReport(
+      {
+        ...dashboardData,
+        // 报告头部周期文案对齐复盘周
+        _weekendPeriodLabel: review.week_label || '',
+        _weekendPeriodTitle: review.period === 'current' ? '本周' : '上周',
+        streak: {
+          ...(dashboardData.streak || {}),
+          // 复盘卡片以该周完成数补充说明（连续打卡仍用当前 streak）
+        },
+      },
+      overall,
+      'weekendGrowthReport',
+    )
 
     overlay.classList.remove('hidden')
     const scroll = overlay.querySelector('.weekend-summary-scroll')
@@ -1044,6 +1236,49 @@ export function initMainHomeView(router) {
     router.push('/onboarding/plan-create')
   }
 
+  window.switchHomePlan = async (planId) => {
+    if (!planId || String(planId) === String(dashboardData?.active_plan_id)) return
+    try {
+      await api.post(`/plans/${planId}/activate`)
+      if (dashboardData?.plans) {
+        dashboardData.plans = dashboardData.plans.map((p) => ({
+          ...p,
+          is_active: p.id === planId,
+        }))
+        dashboardData.active_plan_id = planId
+        const active = dashboardData.plans.find((p) => p.id === planId)
+        dashboardData.plan_phases = active?.phases || []
+        dashboardData.core_goal = active?.core_goal || dashboardData.core_goal
+        renderPlanPhases(
+          dashboardData.plan_phases,
+          dashboardData.core_goal,
+          dashboardData.plans,
+          planId
+        )
+      } else {
+        await loadDashboard()
+      }
+    } catch (e) {
+      showToast(e?.response?.data?.detail || '切换计划失败')
+    }
+  }
+
+  window.addAnotherPlan = () => {
+    router.push('/onboarding/plan-create')
+  }
+
+  window.deleteHomePlan = async (planId) => {
+    if (!planId) return
+    if (!confirm('确认删除这条计划？相关每日任务与提醒也会一并移除。')) return
+    try {
+      await api.delete(`/plans/${planId}`)
+      showToast('计划已删除')
+      await loadDashboard()
+    } catch (e) {
+      showToast(e?.response?.data?.detail || '删除失败')
+    }
+  }
+
   window.pauseTimeGoal = () => {
     const type = activeTimeGoalType
     if (!type) return
@@ -1133,7 +1368,7 @@ export function initMainHomeView(router) {
       desc: r.description || '悦己奖励',
       tag: r.status === 'locked' ? '待解锁' : '已解锁',
     }))
-    customList.innerHTML = renderRewardPackItems(custom, '')
+    customList.innerHTML = renderRewardPackItems(custom, '暂无悦己奖励，可在下方添加')
   }
 
   function buildRewardDescription(desc, condition) {
@@ -1180,15 +1415,14 @@ export function initMainHomeView(router) {
 
   window.viewRewardPack = (type) => {
     activeRewardPackType = type
-    const name = TIME_GOAL_NAMES[type] || '该时间'
     const titleEl = document.getElementById('rewardPackModalTitle')
     const defaultList = document.getElementById('rewardPackDefaultList')
 
-    if (titleEl) titleEl.textContent = `${name}奖励礼包`
+    if (titleEl) titleEl.textContent = '完成即可得奖励礼包'
     if (defaultList) {
       defaultList.innerHTML = renderRewardPackItems(
         DEFAULT_REWARD_PACK[type] || DEFAULT_REWARD_PACK.survival,
-        '暂无默认奖励'
+        '暂无随机小惊喜'
       )
     }
     refreshRewardPackCustomList()
@@ -1197,6 +1431,14 @@ export function initMainHomeView(router) {
   }
 
   const SHOP_PICK_APPS = {
+    taobao: {
+      appUrl: 'taobao://',
+      webUrl: 'https://m.taobao.com/',
+    },
+    dewu: {
+      appUrl: 'dewuapp://',
+      webUrl: 'https://m.dewu.com/',
+    },
     smzdm: {
       appUrl: 'smzdm://',
       webUrl: 'https://m.smzdm.com/',
@@ -1221,6 +1463,217 @@ export function initMainHomeView(router) {
     }, 900)
   }
 
+  let dressDraftLook = getCurrentAvatarLook()
+  let dressPreviewTimer = null
+
+  function hslSwatch(hue, soft = false, dark = false) {
+    if (dark) return `hsl(${hue} 18% 22%)`
+    if (soft) return `hsl(${hue} 28% 88%)`
+    return `hsl(${hue} 72% 58%)`
+  }
+
+  function scheduleDressPreview() {
+    if (dressPreviewTimer) clearTimeout(dressPreviewTimer)
+    dressPreviewTimer = setTimeout(() => {
+      const wrap = document.getElementById('avatarDressPreview')
+      if (!wrap) return
+      previewAvatarLook(dressDraftLook, wrap)
+    }, 60)
+  }
+
+  function renderDressPanels() {
+    const panels = document.getElementById('avatarDressPanels')
+    if (!panels) return
+    const draft = normalizeLook(dressDraftLook)
+    const presetId = findPresetId(draft)
+
+    const chip = (active, label, onClickAttr) =>
+      `<button type="button" class="dress-chip${active ? ' active' : ''}" onclick="${onClickAttr}">${label}</button>`
+
+    const swatch = (active, color, title, onClickAttr) =>
+      `<button type="button" class="dress-swatch${active ? ' active' : ''}" title="${title}" style="background:${color}" onclick="${onClickAttr}"></button>`
+
+    panels.innerHTML = `
+      <div class="dress-section">
+        <div class="dress-section-title">① 选择人物</div>
+        <div class="dress-character-grid">
+          ${CHARACTERS.map(
+            (c) => `
+            <button type="button" class="dress-character-card${draft.characterId === c.id ? ' active' : ''}" onclick="setAvatarDressField('character','${c.id}')">
+              <img class="dress-character-thumb" src="${c.thumb}" alt="${c.title}" draggable="false">
+              <span class="dress-character-title">${c.title}</span>
+            </button>`,
+          ).join('')}
+        </div>
+      </div>
+      <div class="dress-section">
+        <div class="dress-section-title">② 宠物 <span class="dress-locked-tag">待解锁</span></div>
+        <div class="dress-pet-grid">
+          ${PETS.filter((p) => p.id !== 'none').map((p) => {
+            const thumb =
+              p.id === 'luna'
+                ? `<img src="${p.src}" alt="守护者">`
+                : p.id === 'artemis'
+                  ? `<img src="${p.src}" alt="陪伴者">`
+                  : `<span class="dress-pet-both"><img src="${PETS.find((x) => x.id === 'luna').src}" alt="守护者"><img src="${PETS.find((x) => x.id === 'artemis').src}" alt="陪伴者"></span>`
+            return `
+            <div class="dress-pet-card is-locked" aria-disabled="true" title="待解锁">
+              <span class="dress-pet-thumb">${thumb}</span>
+              <span class="dress-pet-name">${p.short}</span>
+              <span class="dress-pet-lock">待解锁</span>
+            </div>`
+          }).join('')}
+        </div>
+      </div>
+      <div class="dress-section">
+        <div class="dress-section-title">③ 外观微调</div>
+        <div class="dress-section-title dress-section-subtitle">快捷套装</div>
+        <div class="dress-options">
+          ${LOOK_PRESETS.map((p) => chip(presetId === p.id, p.name, `setAvatarDressField('preset','${p.id}')`)).join('')}
+        </div>
+      </div>
+      <div class="dress-section">
+        <div class="dress-section-title">发色</div>
+        <div class="dress-options">
+          ${HAIR_SWATCHES.map((s) =>
+            swatch(
+              draft.hairHue === s.hue && !!draft.hairSilver === !!s.silver && !!draft.hairDark === !!s.dark,
+              s.dark ? hslSwatch(s.hue, false, true) : s.silver ? 'linear-gradient(135deg,#f2f4f8,#9aa3b2)' : hslSwatch(s.hue),
+              s.name,
+              `setAvatarDressField('hair',${s.hue},${s.silver ? 'true' : 'false'},${s.dark ? 'true' : 'false'})`,
+            ),
+          ).join('')}
+        </div>
+      </div>
+      <div class="dress-section">
+        <div class="dress-section-title">服装色</div>
+        <div class="dress-options">
+          ${OUTFIT_SWATCHES.map((s) =>
+            swatch(
+              draft.outfitHue === s.hue && !!draft.outfitSoft === !!s.soft,
+              s.soft ? hslSwatch(s.hue, true) : hslSwatch(s.hue),
+              s.name,
+              `setAvatarDressField('outfit',${s.hue},${s.soft ? 'true' : 'false'})`,
+            ),
+          ).join('')}
+        </div>
+      </div>
+      <div class="dress-section">
+        <div class="dress-section-title">点缀色</div>
+        <div class="dress-options">
+          ${ACCENT_SWATCHES.map((s) =>
+            swatch(draft.accentHue === s.hue, hslSwatch(s.hue), s.name, `setAvatarDressField('accent',${s.hue})`),
+          ).join('')}
+        </div>
+      </div>
+      <div class="dress-section">
+        <div class="dress-section-title">肤色</div>
+        <div class="dress-options">
+          ${SKIN_SWATCHES.map((s) =>
+            chip(draft.skinTone === s.tone, s.name, `setAvatarDressField('skin',${s.tone})`),
+          ).join('')}
+        </div>
+      </div>
+      <div class="dress-section">
+        <div class="dress-section-title">配饰</div>
+        <div class="dress-options">
+          ${ACCESSORIES.map((a) =>
+            chip(draft.accessory === a.id, `${a.emoji} ${a.name}`, `setAvatarDressField('accessory','${a.id}')`),
+          ).join('')}
+        </div>
+      </div>
+      <div class="dress-section">
+        <div class="dress-section-title">光环</div>
+        <div class="dress-options">
+          ${AURAS.map((a) => chip(draft.aura === a.id, a.name, `setAvatarDressField('aura','${a.id}')`)).join('')}
+        </div>
+      </div>
+    `
+  }
+
+  function syncDressModalUi() {
+    const preview = document.getElementById('avatarDressPreview')
+    if (preview) {
+      preview.innerHTML = renderDressPreviewFigure(dressDraftLook)
+    }
+    renderDressPanels()
+    scheduleDressPreview()
+  }
+
+  window.openAvatarDressModal = () => {
+    dressDraftLook = getCurrentAvatarLook()
+    syncDressModalUi()
+    document.getElementById('avatarDressOverlay')?.classList.remove('hidden')
+  }
+
+  window.closeAvatarDressModal = () => {
+    document.getElementById('avatarDressOverlay')?.classList.add('hidden')
+  }
+
+  window.resetAvatarDressDraft = () => {
+    const personality = useUserStore().personality
+    dressDraftLook = lookForCharacter(characterIdFromPersonality(personality), {
+      petId: 'none',
+      source: 'personality',
+    })
+    syncDressModalUi()
+  }
+
+  window.setAvatarDressField = (field, value, flagA = false, flagB = false) => {
+    const next = { ...normalizeLook(dressDraftLook) }
+    if (field === 'character') {
+      dressDraftLook = lookForCharacter(value, next)
+      syncDressModalUi()
+      return
+    }
+    if (field === 'pet') {
+      // 宠物暂未解锁，仅展示选项
+      return
+    }
+    if (field === 'preset') {
+      const preset = LOOK_PRESETS.find((p) => p.id === value)
+      if (preset) {
+        dressDraftLook = normalizeLook({
+          ...next,
+          ...preset.look,
+          characterId: next.characterId,
+          petId: next.petId,
+        })
+      }
+    } else if (field === 'hair') {
+      next.hairHue = Number(value)
+      next.hairSilver = !!flagA
+      next.hairDark = !!flagB
+      dressDraftLook = next
+    } else if (field === 'outfit') {
+      next.outfitHue = Number(value)
+      next.outfitSoft = !!flagA
+      dressDraftLook = next
+    } else if (field === 'accent') {
+      next.accentHue = Number(value)
+      dressDraftLook = next
+    } else if (field === 'skin') {
+      next.skinTone = Number(value)
+      dressDraftLook = next
+    } else if (field === 'accessory') {
+      next.accessory = value
+      dressDraftLook = next
+    } else if (field === 'aura') {
+      next.aura = value
+      dressDraftLook = next
+    }
+    renderDressPanels()
+    scheduleDressPreview()
+  }
+
+  window.confirmAvatarDress = () => {
+    const saved = saveAvatarLook({ ...dressDraftLook, petId: 'none' }, { asUserPick: true })
+    setCurrentAvatarLook(saved)
+    refreshAvatarLook(saved)
+    window.closeAvatarDressModal()
+    showToast('形象已保存，闪闪发光～')
+  }
+
   window.addPackReward = async () => {
     const name = document.getElementById('packRewardName')?.value?.trim()
     const desc = document.getElementById('packRewardDesc')?.value?.trim()
@@ -1230,7 +1683,7 @@ export function initMainHomeView(router) {
       return
     }
     if (!condition) {
-      alert('请填写达成条件中的数值 XX')
+      alert('请填写达成标准中的数值 XX')
       return
     }
     try {
@@ -1282,6 +1735,11 @@ export function initMainHomeView(router) {
   }
 
   const energyChatHistory = []
+  let companionVoiceSpeak = true
+  let companionRecognition = null
+  let companionListening = false
+  const userStoreForCompanion = useUserStore()
+  let activeCompanion = getCompanion(userStoreForCompanion.personality)
 
   function escapeChatText(value) {
     return String(value || '')
@@ -1291,18 +1749,128 @@ export function initMainHomeView(router) {
       .replace(/"/g, '&quot;')
   }
 
+  function syncCompanionUi(companion) {
+    activeCompanion = companion || getCompanion(userStoreForCompanion.personality)
+    const nameEl = document.getElementById('companionHeaderName')
+    const descEl = document.getElementById('companionHeaderDesc')
+    const headerAvatar = document.getElementById('companionHeaderAvatar')
+    const greetingAvatar = document.getElementById('companionGreetingAvatar')
+    const greetingBubble = document.getElementById('companionGreetingBubble')
+    if (nameEl) nameEl.textContent = activeCompanion.display
+    if (descEl) descEl.textContent = `${activeCompanion.title} · 文字或语音陪你聊`
+    if (headerAvatar) headerAvatar.src = activeCompanion.avatar
+    if (greetingAvatar) greetingAvatar.src = activeCompanion.avatar
+    if (greetingBubble && energyChatHistory.length === 0) {
+      greetingBubble.textContent = activeCompanion.greeting
+    }
+    const toggle = document.getElementById('companionVoiceToggle')
+    if (toggle) {
+      toggle.classList.toggle('is-on', companionVoiceSpeak)
+      toggle.classList.toggle('is-off', !companionVoiceSpeak)
+      toggle.setAttribute('aria-pressed', companionVoiceSpeak ? 'true' : 'false')
+      toggle.textContent = companionVoiceSpeak ? '🔊' : '🔇'
+    }
+  }
+
+  function companionAvatarHtml(role) {
+    if (role === 'user') return '<div class="energy-chat-avatar">🙂</div>'
+    return `<div class="energy-chat-avatar companion-avatar-img"><img src="${escapeChatText(activeCompanion.avatar)}" alt=""></div>`
+  }
+
   function appendEnergyChatMessage(role, content, extraClass = '') {
     const box = document.getElementById('energyChatMessages')
     if (!box) return null
     const row = document.createElement('div')
     row.className = `energy-chat-msg ${role}${extraClass ? ` ${extraClass}` : ''}`
-    const avatar = role === 'user' ? '🙂' : '🪐'
     row.innerHTML = `
-      <div class="energy-chat-avatar">${avatar}</div>
+      ${companionAvatarHtml(role)}
       <div class="energy-chat-bubble">${escapeChatText(content)}</div>`
     box.appendChild(row)
     box.scrollTop = box.scrollHeight
     return row
+  }
+
+  function maybeSpeakReply(text) {
+    if (!companionVoiceSpeak || !text) return
+    speakCompanionText(text)
+  }
+
+  syncCompanionUi(activeCompanion)
+  api
+    .get('/energy/companion')
+    .then(({ data }) => {
+      if (!data) return
+      activeCompanion = {
+        ...getCompanion(data.personality),
+        name: data.name || activeCompanion.name,
+        title: data.title || activeCompanion.title,
+        display: data.display || activeCompanion.display,
+        avatar: data.avatar || activeCompanion.avatar,
+        greeting: data.greeting || activeCompanion.greeting,
+      }
+      syncCompanionUi(activeCompanion)
+    })
+    .catch(() => {})
+
+  window.toggleCompanionVoiceSpeak = () => {
+    companionVoiceSpeak = !companionVoiceSpeak
+    if (!companionVoiceSpeak) stopCompanionSpeech()
+    syncCompanionUi(activeCompanion)
+    showToast(companionVoiceSpeak ? '已开启伙伴朗读' : '已关闭伙伴朗读')
+  }
+
+  window.toggleCompanionVoiceInput = () => {
+    const micBtn = document.getElementById('energyChatMicBtn')
+    const hint = document.getElementById('companionVoiceHint')
+
+    if (companionListening) {
+      try {
+        companionRecognition?.stop?.()
+      } catch {
+        /* ignore */
+      }
+      companionListening = false
+      micBtn?.classList.remove('is-listening')
+      if (hint) hint.textContent = '已停止聆听，可以继续打字或再点麦克风'
+      return
+    }
+
+    stopCompanionSpeech()
+    companionRecognition = createCompanionSpeechRecognition({
+      onStart: () => {
+        companionListening = true
+        micBtn?.classList.add('is-listening')
+        if (hint) hint.textContent = '我在听…说完会自动停下'
+      },
+      onEnd: () => {
+        companionListening = false
+        micBtn?.classList.remove('is-listening')
+      },
+      onError: () => {
+        companionListening = false
+        micBtn?.classList.remove('is-listening')
+        if (hint) hint.textContent = '这台设备暂时听不清，可以改用文字聊聊'
+        showToast('语音识别不可用，试试文字吧')
+      },
+      onResult: (text) => {
+        const input = document.getElementById('energyChatInput')
+        if (input) input.value = text
+        if (hint) hint.textContent = '听清了，正在请伙伴回答…'
+        window.sendEnergyChat()
+      },
+    })
+
+    if (!companionRecognition) {
+      showToast('当前环境不支持语音识别，请用文字聊')
+      if (hint) hint.textContent = '可改用文字输入；部分机型 WebView 不支持语音识别'
+      return
+    }
+
+    try {
+      companionRecognition.start()
+    } catch {
+      showToast('没能打开麦克风，请检查权限后再试')
+    }
   }
 
   window.submitEnergyChat = (e) => {
@@ -1322,7 +1890,11 @@ export function initMainHomeView(router) {
     if (sendBtn) sendBtn.disabled = true
     appendEnergyChatMessage('user', message)
 
-    const typing = appendEnergyChatMessage('assistant', '正在思考…', 'is-typing-row')
+    const typing = appendEnergyChatMessage(
+      'assistant',
+      `${activeCompanion.name}正在想怎么说…`,
+      'is-typing-row'
+    )
     const bubble = typing?.querySelector('.energy-chat-bubble')
     if (bubble) bubble.classList.add('is-typing')
 
@@ -1335,17 +1907,28 @@ export function initMainHomeView(router) {
         },
         { timeout: 60000 }
       )
-      const reply = data?.reply || '我在这儿，你可以再具体说说你的情况。'
+      if (data?.companion_display || data?.companion_avatar) {
+        activeCompanion = {
+          ...activeCompanion,
+          name: data.companion_name || activeCompanion.name,
+          display: data.companion_display || activeCompanion.display,
+          avatar: data.companion_avatar || activeCompanion.avatar,
+        }
+        syncCompanionUi(activeCompanion)
+      }
+      const reply =
+        data?.reply || `我是${activeCompanion.name}，在这儿陪着你，可以再具体说说。`
       if (typing) typing.remove()
       appendEnergyChatMessage('assistant', reply)
       energyChatHistory.push({ role: 'user', content: message })
       energyChatHistory.push({ role: 'assistant', content: reply })
+      maybeSpeakReply(reply)
     } catch (err) {
       if (typing) typing.remove()
-      appendEnergyChatMessage(
-        'assistant',
-        err.response?.data?.detail || '暂时连接不上助手，请稍后再试。'
-      )
+      const fail =
+        err.response?.data?.detail ||
+        `${activeCompanion.name}这会儿信号有点弱，稍后再聊好吗？`
+      appendEnergyChatMessage('assistant', fail)
     } finally {
       if (sendBtn) sendBtn.disabled = false
       input?.focus()
@@ -1353,8 +1936,10 @@ export function initMainHomeView(router) {
   }
 
   window.selectCategory = (el, category) => {
-    document.querySelectorAll('.category-tab').forEach((tab) => tab.classList.remove('active'))
-    el.classList.add('active')
+    document.querySelectorAll('#energyPlanetTabs .time-type-tag').forEach((tab) => {
+      tab.classList.remove('selected', 'is-lit', 'active')
+    })
+    el.classList.add('selected', 'is-lit', 'active')
     currentCategory = category
     filterProducts()
   }
@@ -1475,20 +2060,36 @@ export function initMainHomeView(router) {
     'addPackReward',
     'syncPackRewardConditionUi',
     'openShopPick',
+    'openAvatarDressModal',
+    'closeAvatarDressModal',
+    'confirmAvatarDress',
+    'resetAvatarDressDraft',
+    'setAvatarDressField',
     'openDailyCompletionCurve',
     'closeDailyCompletionCurve',
+    'openTodayGrowthQuote',
+    'closeTodayGrowthQuote',
     'selectCategory',
     'selectSubcategory',
     'addToPlan',
     'addReward',
     'submitEnergyChat',
     'sendEnergyChat',
+    'toggleCompanionVoiceSpeak',
+    'toggleCompanionVoiceInput',
     'logoutApp',
   ]
 
   return () => {
     stopFireworks()
     stopCommunityAutoScroll()
+    stopCompanionSpeech()
+    try {
+      companionRecognition?.stop?.()
+    } catch {
+      /* ignore */
+    }
+    companionRecognition = null
     if (communityResumeTimer != null) clearTimeout(communityResumeTimer)
     communityResumeTimer = null
     communityScrollBound = false

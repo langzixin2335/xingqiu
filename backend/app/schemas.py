@@ -101,17 +101,25 @@ class PlanGoalIn(BaseModel):
 
 
 class DailyReminderIn(BaseModel):
-    title: str = Field(min_length=1, max_length=255)
+    title: str = Field(min_length=1, max_length=2000)
     time_type: str = Field(pattern=r"^(survival|money|beauty|fun|flow)$")
     remind_time: str = Field(default="07:00", pattern=r"^\d{2}:\d{2}$")
+    deliver_mode: str = Field(default="text", pattern=r"^(text|voice)$")
+    voice_persona: str = Field(default="sister", pattern=r"^(sister|brother)$")
     repeat_days: str = Field(default="1,2,3,4,5")
     holiday_skip: bool = False
     smart_enabled: bool = True
 
 
+class EncouragePhrasesRequest(BaseModel):
+    time_type: str = Field(default="survival", pattern=r"^(survival|money|beauty|fun|flow)$")
+    count: int = Field(default=5, ge=3, le=8)
+
+
 class AiPlanRequest(BaseModel):
     core_goal: str = Field(min_length=1)
     duration: str = Field(default="3个月")
+    daily_time_budget: str = Field(default="30-60分钟", max_length=40)
     personality: Optional[str] = Field(default=None, pattern=r"^(wood|fire|earth|metal|water)$")
 
 
@@ -121,6 +129,7 @@ class AiGoalUnderstanding(BaseModel):
     success_criteria: str = ""
     weekly_hours: int = 5
     main_obstacle: str = ""
+    primary_time_type: str = "money"
 
 
 class AiPlanPhase(BaseModel):
@@ -166,6 +175,8 @@ class ReminderOut(BaseModel):
     title: str
     time_type: str
     remind_time: str
+    deliver_mode: str = "text"
+    voice_persona: str = "sister"
     repeat_days: str
     holiday_skip: bool
     smart_enabled: bool
@@ -271,6 +282,11 @@ class WeekendReviewOut(BaseModel):
     week_completions: int
     current_streak: int
     message: str
+    period: str = "previous"  # previous | current
+    week_label: str = ""
+    title: str = "上周总结"
+    button_label: str = "查看上周总结"
+    current_week_locked: bool = True
 
 
 class PlanetOut(BaseModel):
@@ -363,6 +379,10 @@ class EnergyChatRequest(BaseModel):
 class EnergyChatResponse(BaseModel):
     reply: str
     source: str = "ai"
+    companion_name: str = "星光"
+    companion_display: str = "你的伙伴·星光"
+    companion_avatar: str = "/images/avatar/sailor-fire-portrait.png"
+    personality: str | None = None
 
 
 class PlanetGrowthSpeedOut(BaseModel):
@@ -371,11 +391,26 @@ class PlanetGrowthSpeedOut(BaseModel):
     per_day: float = 0.0
 
 
+class PlanSummaryOut(BaseModel):
+    id: int
+    core_goal: Optional[str] = None
+    goal_status: str = "has-plan"
+    is_active: bool = True
+    created_at: Optional[str] = None
+    phase_count: int = 0
+    phases: list[PlanPhaseOut] = []
+
+    class Config:
+        from_attributes = True
+
+
 class DashboardOut(BaseModel):
     user: UserOut
     planets: list[PlanetOut]
     tasks: list[TaskOut]
     plan_phases: list[PlanPhaseOut] = []
+    plans: list[PlanSummaryOut] = []
+    active_plan_id: Optional[int] = None
     posts: list[PostOut]
     products: list[ProductOut]
     badges: list[BadgeOut]

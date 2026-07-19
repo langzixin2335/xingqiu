@@ -58,6 +58,7 @@ class Plan(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     goal_status = Column(String(20), default="has-plan")
     core_goal = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="plans")
@@ -84,6 +85,7 @@ class DailyTask(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    plan_id = Column(Integer, ForeignKey("plans.id"), nullable=True)
     title = Column(String(255), nullable=False)
     time_type = Column(String(20), nullable=False)
     scheduled_label = Column(String(50), default="")
@@ -100,6 +102,7 @@ class TaskTemplate(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    plan_id = Column(Integer, ForeignKey("plans.id"), nullable=True)
     title = Column(String(255), nullable=False)
     time_type = Column(String(20), nullable=False)
     remind_time = Column(String(10), default="07:00")
@@ -151,9 +154,12 @@ class DailyReminder(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    title = Column(String(255), nullable=False)
-    time_type = Column(String(20), nullable=False)
+    plan_id = Column(Integer, ForeignKey("plans.id"), nullable=True)
+    title = Column(Text, nullable=False)
+    time_type = Column(String(80), nullable=False)
     remind_time = Column(String(10), default="07:00")
+    deliver_mode = Column(String(10), default="text")
+    voice_persona = Column(String(20), default="sister")
     repeat_days = Column(String(30), default="1,2,3,4,5")
     holiday_skip = Column(Boolean, default=False)
     smart_enabled = Column(Boolean, default=True)

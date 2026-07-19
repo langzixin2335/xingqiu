@@ -4,7 +4,7 @@
     <div class="auth-container">
       <div class="brand-logo">✦ SHINING PLANET ✦</div>
       <h1 class="auth-title">欢迎回到<span>闪耀星球</span></h1>
-      <p class="auth-subtitle">登录你的账号，继续星际成长之旅</p>
+      <p class="auth-subtitle">开发测试环境：请点击【微信一键登录】即可</p>
       <div class="divider"></div>
 
       <form class="auth-form" @submit.prevent="handleLogin">
@@ -35,17 +35,9 @@
         </button>
       </form>
 
-      <div class="auth-divider"><span>或</span></div>
+      <div class="auth-divider"><span>或一键登录</span></div>
 
-      <button
-        type="button"
-        class="btn btn-wechat"
-        :disabled="wxLoading"
-        @click="handleWechatLogin"
-      >
-        {{ wxLoading ? '跳转中...' : '微信一键登录' }}
-      </button>
-      <p v-if="wxHint" class="wx-hint">{{ wxHint }}</p>
+      <AuthOauthApps :loading-id="oauthLoading" @select="handleOauthSelect" />
 
       <p class="auth-footer">
         还没有账号？
@@ -56,9 +48,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import Starfield from '../../components/Starfield.vue'
+import AuthOauthApps from '../../components/AuthOauthApps.vue'
 import { useUserStore } from '../../stores/user'
 import api from '../../api'
 import '../../assets/styles/auth.css'
@@ -70,9 +63,8 @@ const userStore = useUserStore()
 const phone = ref('')
 const password = ref('')
 const loading = ref(false)
-const wxLoading = ref(false)
+const oauthLoading = ref('')
 const error = ref('')
-const wxHint = ref('')
 
 function isWechatBrowser() {
   return /MicroMessenger/i.test(navigator.userAgent)
@@ -86,30 +78,17 @@ function redirectAfterLogin() {
     router.push('/home')
   } else {
     const map = {
-      welcome: '/onboarding/welcome',
+      welcome: '/onboarding/wuxing-select',
       personality: '/onboarding/wuxing-select',
       plan: '/onboarding/plan-create',
     }
-    router.push(map[userStore.onboardingStep] || '/onboarding/welcome')
+    router.push(map[userStore.onboardingStep] || '/onboarding/wuxing-select')
   }
 }
 
-onMounted(async () => {
-  try {
-    const { data } = await api.get('/auth/wechat/auth-url')
-    if (data.dev_mode) {
-      wxHint.value = '开发环境：将使用模拟微信登录'
-    } else if (!isWechatBrowser()) {
-      wxHint.value = '微信登录请在微信内打开'
-    }
-  } catch {
-    wxHint.value = ''
-  }
-})
-
 async function handleWechatLogin() {
   error.value = ''
-  wxLoading.value = true
+  oauthLoading.value = 'wechat'
   try {
     const { data } = await api.get('/auth/wechat/auth-url')
     if (data.url && isWechatBrowser()) {
@@ -121,8 +100,17 @@ async function handleWechatLogin() {
   } catch (e) {
     error.value = e.response?.data?.detail || '微信登录失败'
   } finally {
-    wxLoading.value = false
+    oauthLoading.value = ''
   }
+}
+
+async function handleOauthSelect(id) {
+  if (id === 'wechat') {
+    await handleWechatLogin()
+    return
+  }
+  const names = { weibo: '微博', xhs: '小红书', smzdm: '值得买' }
+  error.value = `${names[id] || '该'}登录即将开放，请先使用微信`
 }
 
 async function handleLogin() {

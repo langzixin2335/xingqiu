@@ -572,7 +572,10 @@ function buildGrowthReportModel(data, overall) {
   const today = new Date()
   const start = new Date(today)
   start.setDate(today.getDate() - 6)
-  const periodText = `${formatReportDate(start)} – ${formatReportDate(today)}`
+  const periodText = data._weekendPeriodLabel
+    ? String(data._weekendPeriodLabel)
+    : `${formatReportDate(start)} – ${formatReportDate(today)}`
+  const periodTitle = data._weekendPeriodTitle ? String(data._weekendPeriodTitle) : '近7日'
 
   const summaries = []
   if (weekAvg >= 80) {
@@ -621,6 +624,7 @@ function buildGrowthReportModel(data, overall) {
   }
 
   return {
+    periodTitle,
     periodText,
     weekAvg,
     currentStreak,
@@ -685,7 +689,7 @@ export function renderGrowthReport(data, overall, rootId = 'weekendGrowthReport'
   root.innerHTML = `
     <div class="growth-report-head">
       <div class="growth-report-meta">
-        <span class="growth-report-period">近7日</span>
+        <span class="growth-report-period">${model.periodTitle || '近7日'}</span>
         <span class="growth-report-dates">${model.periodText}</span>
         <span class="growth-report-trend">走势${model.trendLabel}</span>
       </div>
@@ -1058,31 +1062,60 @@ export function renderGrowthTemplateReport(data, overall) {
   syncMonthlyGrowthReportGate()
 }
 
-export function renderPlanPhases(phases, coreGoal) {
+export function renderPlanPhases(phases, coreGoal, plans = [], activePlanId = null) {
   const timeline = document.getElementById('planPhaseTimeline')
   const desc = document.getElementById('planCoreGoalDesc')
+  const switcher = document.getElementById('planSwitcher')
   if (!timeline) return
 
-  if (coreGoal && desc) {
-    desc.textContent = `核心目标：${coreGoal}`
+  const list = Array.isArray(plans) ? plans : []
+  const activeId = activePlanId ?? list.find((p) => p.is_active)?.id ?? list[0]?.id ?? null
+  const active = list.find((p) => p.id === activeId) || null
+  const showPhases = active?.phases?.length ? active.phases : phases || []
+  const showGoal = active?.core_goal || coreGoal
+
+  if (switcher) {
+    if (list.length >= 1) {
+      switcher.innerHTML = list
+        .map((p, idx) => {
+          const label = (p.core_goal || `计划 ${idx + 1}`).slice(0, 18)
+          const selected = p.id === activeId
+          return `<button type="button" class="plan-switch-chip${selected ? ' active' : ''}" onclick="switchHomePlan(${p.id})" title="${escapeHtml(p.core_goal || label)}">${escapeHtml(label)}</button>`
+        })
+        .join('')
+      switcher.classList.remove('hidden')
+    } else {
+      switcher.innerHTML = ''
+      switcher.classList.add('hidden')
+    }
   }
 
-  if (!phases?.length) {
+  if (desc) {
+    if (list.length > 1 && showGoal) {
+      desc.textContent = `当前：${showGoal}（点上方标签可切换其他计划）`
+    } else if (showGoal) {
+      desc.textContent = `核心目标：${showGoal}`
+    } else {
+      desc.textContent = '查看你的长期成长路径与当前阶段'
+    }
+  }
+
+  if (!showPhases?.length) {
     timeline.innerHTML = '<div class="plan-phase-empty">确认计划后，这里将展示你的阶段成长路径</div>'
     return
   }
 
-  timeline.innerHTML = phases
+  timeline.innerHTML = showPhases
     .map(
       (phase, index) => `
     <div class="plan-phase-item${index === 0 ? ' current' : ''}">
       <div class="plan-phase-header">
         <span class="plan-phase-label">${escapeHtml(phase.phase_label || `阶段 ${index + 1}`)}</span>
-        <span class="plan-phase-progress">${phase.progress_percent}%</span>
+        <span class="plan-phase-progress">${phase.progress_percent ?? 0}%</span>
       </div>
       <div class="plan-phase-goal">${escapeHtml(phase.title)}</div>
       ${phase.action ? `<div class="plan-phase-action">${escapeHtml(phase.action)}</div>` : ''}
-      <div class="plan-phase-bar"><div class="plan-phase-bar-fill" style="width:${phase.progress_percent}%"></div></div>
+      <div class="plan-phase-bar"><div class="plan-phase-bar-fill" style="width:${phase.progress_percent ?? 0}%"></div></div>
       <div class="plan-phase-tag ${phase.time_type}">${TIME_TAG[phase.time_type] || phase.time_type}</div>
     </div>`
     )
@@ -1109,6 +1142,18 @@ export function renderWeekendReview(review) {
     card.classList.add('hidden')
     return
   }
+
+  const titleEl = document.getElementById('weekendReviewTitle')
+  const btn = document.getElementById('weekendReviewBtn')
+  const lockTag = document.getElementById('weekendReviewLockTag')
+
+  if (titleEl) {
+    titleEl.textContent = review.period === 'current' ? '周复盘 · 本周' : '周复盘 · 上周'
+  }
   text.textContent = review.message
+  if (btn) btn.textContent = review.button_label || (review.period === 'current' ? '查看本周总结' : '查看上周总结')
+  if (lockTag) {
+    lockTag.classList.toggle('hidden', !review.current_week_locked)
+  }
   card.classList.remove('hidden')
 }

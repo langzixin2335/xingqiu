@@ -22,8 +22,8 @@ api.interceptors.response.use(
       const here = `${window.location.pathname}${window.location.hash || ''}`
       if (!here.includes('/auth')) {
         window.location.href = window.location.hash?.startsWith('#/')
-          ? '#/auth/login'
-          : '/auth/login'
+          ? '#/welcome'
+          : '/welcome'
       }
     }
     return Promise.reject(error)

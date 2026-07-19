@@ -33,7 +33,7 @@
             // 更新页面标题
             const titles = {
                 'plan': '我的<span>星际旅程</span>',
-                'energy': '能量<span>补给站</span>',
+                'energy': '能量<span>中心</span>',
                 'reward': '成长<span>奖励</span>',
                 'member': '会员<span>中心</span>'
             };
@@ -41,7 +41,7 @@
             
             const subtitles = {
                 'plan': '在闪耀星球，每一天都是成长',
-                'energy': '选择适合你的课程与产品',
+                'energy': '成长的路上，有我陪你一起走',
                 'reward': '记录成长，奖励自己',
                 'member': '专属权益，助力成长'
             };

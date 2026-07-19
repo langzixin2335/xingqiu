@@ -15,7 +15,7 @@
                 <!-- 木型 - 生发型 -->
                 <div class="element-card wood" data-element="wood" onclick="selectElement('wood')">
                     <div class="goddess-avatar wood">
-                        <img src="/images/goddess-wood.png" alt="木型女神" width="128" height="128" loading="lazy" decoding="async">
+                        <img src="/images/avatar/sailor-wood-portrait.png" alt="木野真琴" width="128" height="128" loading="lazy" decoding="async">
                     </div>
                     <div class="card-content">
                         <div class="card-header">
@@ -31,7 +31,7 @@
                 <!-- 火型 - 传播型 -->
                 <div class="element-card fire" data-element="fire" onclick="selectElement('fire')">
                     <div class="goddess-avatar fire">
-                        <img src="/images/goddess-fire.png" alt="火型女神" width="128" height="128" loading="lazy" decoding="async">
+                        <img src="/images/avatar/sailor-fire-portrait.png" alt="火野丽" width="128" height="128" loading="lazy" decoding="async">
                     </div>
                     <div class="card-content">
                         <div class="card-header">
@@ -47,7 +47,7 @@
                 <!-- 土型 - 承载型 -->
                 <div class="element-card earth" data-element="earth" onclick="selectElement('earth')">
                     <div class="goddess-avatar earth">
-                        <img src="/images/goddess-earth.png" alt="土型女神" width="128" height="128" loading="lazy" decoding="async">
+                        <img src="/images/avatar/sailor-earth-portrait.png" alt="月野兔" width="128" height="128" loading="lazy" decoding="async">
                     </div>
                     <div class="card-content">
                         <div class="card-header">
@@ -63,7 +63,7 @@
                 <!-- 金型 - 决断型 -->
                 <div class="element-card metal" data-element="metal" onclick="selectElement('metal')">
                     <div class="goddess-avatar metal">
-                        <img src="/images/goddess-metal.png" alt="金型女神" width="128" height="128" loading="lazy" decoding="async">
+                        <img src="/images/avatar/sailor-metal-portrait.png" alt="爱野美奈子" width="128" height="128" loading="lazy" decoding="async">
                     </div>
                     <div class="card-content">
                         <div class="card-header">
@@ -79,7 +79,7 @@
                 <!-- 水型 - 洞察型 -->
                 <div class="element-card water" data-element="water" onclick="selectElement('water')">
                     <div class="goddess-avatar water">
-                        <img src="/images/goddess-water.png" alt="水型女神" width="128" height="128" loading="lazy" decoding="async">
+                        <img src="/images/avatar/sailor-water-portrait.png" alt="水野亚美" width="128" height="128" loading="lazy" decoding="async">
                     </div>
                     <div class="card-content">
                         <div class="card-header">
@@ -107,7 +107,7 @@
             <button class="close-detail" onclick="closeDetail()">✕</button>
             <div class="detail-header">
                 <div class="detail-avatar" id="detailAvatar">
-                    <div class="placeholder-icon" id="detailIcon">🌿</div>
+                    <img id="detailAvatarImg" src="/images/avatar/sailor-wood-portrait.png" alt="五行伙伴" width="160" height="160" decoding="async">
                 </div>
                 <div class="detail-title-group">
                     <div class="detail-title" id="detailTitle">木型 · 生发型</div>
