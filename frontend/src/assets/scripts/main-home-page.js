@@ -533,6 +533,14 @@ function applyCommunityExpandLevel() {
   startCommunityAutoScroll()
 }
 
+function resetHomeScrollTop() {
+  const scrollRoot = document.scrollingElement || document.documentElement
+  if (scrollRoot) scrollRoot.scrollTop = 0
+  window.scrollTo(0, 0)
+  document.body.scrollTop = 0
+  document.documentElement.scrollTop = 0
+}
+
 export function initMainHomeView(router) {
   // 页面重挂载后恢复滚动绑定标记
   communityScrollBound = false
@@ -544,10 +552,18 @@ export function initMainHomeView(router) {
     startCommunityAutoScroll()
   }
 
+  // 首屏固定从「我的星际旅程 / 点亮我的星球」开始，避免沿用上一页滚动位置
+  resetHomeScrollTop()
+  requestAnimationFrame(() => resetHomeScrollTop())
+
   // 中心人物默认跟随五行人格所选战士
   syncAvatarLookFromPersonality(useUserStore().personality)
 
-  loadDashboard()
+  loadDashboard().finally(() => {
+    // 数据渲染后高度变化，再回顶一次，确保首屏不是星球社区
+    resetHomeScrollTop()
+    requestAnimationFrame(() => resetHomeScrollTop())
+  })
 
   // App 内不再显示下载入口
   if (isNativeApp()) {

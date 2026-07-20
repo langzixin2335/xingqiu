@@ -1777,6 +1777,7 @@ export function initPlanCreateView(router) {
       confirmingPlan = false
       // 保存成功后直接进首页，不再弹「计划已安放」
       showToast('计划已保存，正在进入星球')
+      window.scrollTo(0, 0)
       await router.replace('/home')
     } catch (e) {
       confirmingPlan = false
@@ -1790,6 +1791,7 @@ export function initPlanCreateView(router) {
 
   window.goHomeAfterPlan = async () => {
     document.getElementById('planSavedOverlay')?.classList.add('hidden')
+    window.scrollTo(0, 0)
     await router.replace('/home')
   }
 

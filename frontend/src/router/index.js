@@ -60,6 +60,10 @@ const useHashRouter =
 const router = createRouter({
   history: useHashRouter ? createWebHashHistory() : createWebHistory(),
   routes,
+  // 从制定计划等长页进入首页时，避免沿用旧滚动位置（否则会直接落到星球社区）
+  scrollBehavior() {
+    return { left: 0, top: 0 }
+  },
 })
 
 function getOnboardingRoute(step) {
