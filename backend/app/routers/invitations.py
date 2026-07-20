@@ -1,6 +1,7 @@
 import secrets
+from urllib.parse import urlparse
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -10,13 +11,28 @@ from ..schemas import InvitationCreateRequest, InvitationOut
 
 router = APIRouter(prefix="/invitations", tags=["invitations"])
 
+DEFAULT_SHARE_BASE = "https://xq.dongme.me"
 
-def _share_payload(invite: TaskInvitation, base_url: str = "https://shining.planet") -> InvitationOut:
+
+def _public_base_url(request: Request | None = None) -> str:
+    if request is not None:
+        origin = request.headers.get("origin") or ""
+        referer = request.headers.get("referer") or ""
+        for raw in (origin, referer):
+            if not raw:
+                continue
+            parsed = urlparse(raw)
+            if parsed.scheme and parsed.netloc:
+                return f"{parsed.scheme}://{parsed.netloc}"
+    return DEFAULT_SHARE_BASE
+
+
+def _share_payload(invite: TaskInvitation, base_url: str = DEFAULT_SHARE_BASE) -> InvitationOut:
+    share_url = f"{base_url.rstrip('/')}/?invite={invite.invite_code}"
     share_text = (
         f"✨ {invite.inviter_name} 邀请你一起在闪耀星球打卡！\n"
         f"任务：{invite.task_title}\n"
-        f"邀约码：{invite.invite_code}\n"
-        f"一起坚持，共同成长！"
+        f"点开链接一起坚持：{share_url}"
     )
     return InvitationOut(
         id=invite.id,
@@ -26,13 +42,14 @@ def _share_payload(invite: TaskInvitation, base_url: str = "https://shining.plan
         inviter_name=invite.inviter_name,
         status=invite.status,
         share_text=share_text,
-        share_url=f"{base_url}/invite/{invite.invite_code}",
+        share_url=share_url,
     )
 
 
 @router.post("", response_model=InvitationOut)
 def create_invitation(
     payload: InvitationCreateRequest,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -47,24 +64,26 @@ def create_invitation(
     db.add(invite)
     db.commit()
     db.refresh(invite)
-    return _share_payload(invite)
+    return _share_payload(invite, _public_base_url(request))
 
 
 @router.get("/{invite_code}", response_model=InvitationOut)
 def get_invitation(
     invite_code: str,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     invite = db.query(TaskInvitation).filter(TaskInvitation.invite_code == invite_code).first()
     if not invite:
         raise HTTPException(status_code=404, detail="邀约不存在")
-    return _share_payload(invite)
+    return _share_payload(invite, _public_base_url(request))
 
 
 @router.post("/{invite_code}/accept", response_model=InvitationOut)
 def accept_invitation(
     invite_code: str,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -80,4 +99,4 @@ def accept_invitation(
     invite.accepted_by_name = current_user.nickname
     db.commit()
     db.refresh(invite)
-    return _share_payload(invite)
+    return _share_payload(invite, _public_base_url(request))

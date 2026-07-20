@@ -89,23 +89,43 @@ export function renderTasks(tasks, options = {}) {
   const focusTaskId = options.focusTaskId ?? null
   const onFocusTask = typeof options.onFocusTask === 'function' ? options.onFocusTask : null
 
-  container.innerHTML = tasks
+  // 未完成置顶，进页一眼看到要关注的行动
+  const ordered = [...(tasks || [])].sort((a, b) => Number(!!a.completed) - Number(!!b.completed))
+  const pendingCount = ordered.filter((t) => !t.completed).length
+
+  const descEl = document.getElementById('todayActionsDesc')
+  if (descEl) {
+    const aiMode = localStorage.getItem('sp_ai_action_mode')
+    if (pendingCount <= 0) {
+      descEl.textContent = '今日行动已全部完成，继续点亮你的星球'
+    } else if (aiMode === 'easy') {
+      descEl.textContent = '轻松模式：今日行动已为你减负，先完成一件就很好'
+    } else if (aiMode === 'advanced') {
+      descEl.textContent = '进阶模式：今日行动已拉高强度，冲一冲更深的点亮'
+    } else {
+      descEl.textContent = '完成所有行动，获得星球能量碎片'
+    }
+    descEl.classList.remove('has-pending')
+  }
+
+  container.innerHTML = ordered
     .map((task) => {
       const tag = ACTION_TAG[task.time_type] || `${TIME_TAG[task.time_type] || task.time_type}行动`
       const checked = task.completed
       const focused = focusTaskId != null && String(focusTaskId) === String(task.id)
+      const pending = !checked
       const actions = checked
-        ? `<button class="task-action-btn invite" onclick="shareTask(this)" title="发起邀约">发起邀约</button>`
+        ? `<button class="task-action-btn invite share-friend" onclick="shareTask(this)" title="分享">分享</button>`
         : `
-          <button class="task-action-btn invite" onclick="shareTask(this)" title="发起邀约">发起邀约</button>
+          <button class="task-action-btn invite" onclick="shareTask(this)" title="邀约伙伴">邀约伙伴</button>
           <button class="task-action-btn confirm" onclick="confirmTaskComplete(this)" title="确认完成">确认完成</button>`
 
       return `
-      <div class="task-item${checked ? ' completed' : ''}${focused ? ' avatar-focus' : ''}" data-task="${task.id}" data-time-type="${task.time_type}" data-post-id="${task.post_id || ''}" tabindex="0" role="button" aria-label="查看行动对应形象：${escapeHtml(task.title)}">
+      <div class="task-item${checked ? ' completed' : ' task-pending'}${focused ? ' avatar-focus' : ''}" data-task="${task.id}" data-time-type="${task.time_type}" data-post-id="${task.post_id || ''}" data-completed="${checked ? '1' : '0'}" tabindex="0" role="button" aria-label="${pending ? '待完成行动：' : '已完成行动：'}${escapeHtml(task.title)}">
         <div class="task-type-tag ${task.time_type}">${tag}</div>
         <div class="task-content">
           <div class="task-title">${escapeHtml(task.title)}</div>
-          <div class="task-meta">${escapeHtml(task.scheduled_label)}</div>
+          <div class="task-meta">${escapeHtml(task.scheduled_label || (pending ? '今日 · 待完成' : '今日 · 已完成'))}</div>
         </div>
         <div class="task-actions">${actions}</div>
         ${renderTaskSocial(task)}
@@ -193,9 +213,9 @@ export function renderPlanets(planets, tasks = [], focusTaskId = null) {
         const ready = !fullyLit && (!!planet.ready_to_light || fragments >= perLight)
         return `
       <div class="planet ${cfg.class} float-${cfg.float} lit-${level}${fullyLit ? ' lit-full' : ''}${ready ? ' ready-light' : ''}" data-planet-type="${planet.planet_type}" style="${pos} --lit-ratio: ${litRatio};" onclick="showPlanetDetail('${planet.planet_type}')">
-        <div class="planet-sphere" aria-hidden="true">
-          <span class="planet-ring planet-ring-back"></span>
-          <div class="planet-body">
+        <div class="planet-sphere">
+          <span class="planet-ring planet-ring-back" aria-hidden="true"></span>
+          <div class="planet-body" aria-hidden="true">
             <span class="planet-surface"></span>
             <span class="planet-detail"></span>
             <span class="planet-clouds"></span>
@@ -204,7 +224,8 @@ export function renderPlanets(planets, tasks = [], focusTaskId = null) {
             <span class="planet-rim"></span>
             <span class="planet-veil"></span>
           </div>
-          <span class="planet-ring planet-ring-front"></span>
+          <span class="planet-ring planet-ring-front" aria-hidden="true"></span>
+          ${ready ? `<button type="button" class="planet-light-btn" onclick="event.stopPropagation(); lightPlanetNow('${planet.planet_type}')">点亮</button>` : ''}
         </div>
         <div class="planet-meta">
           <div class="planet-name">${cfg.name}</div>
@@ -216,7 +237,6 @@ export function renderPlanets(planets, tasks = [], focusTaskId = null) {
           </div>
           <div class="planet-fragments-row">
             <div class="planet-fragments${ready ? ' full' : ''}">${fullyLit ? '已完全点亮' : `能量碎片 ${Math.min(fragments, perLight)}/${perLight}`}</div>
-            ${ready ? `<button type="button" class="planet-light-btn" onclick="event.stopPropagation(); lightPlanetNow('${planet.planet_type}')">点亮</button>` : ''}
           </div>
         </div>
       </div>`
@@ -304,38 +324,63 @@ export function renderProducts(products) {
     .join('')
 }
 
-export function renderBadges(badges) {
-  const grid = document.getElementById('badgeGrid')
-  if (!grid) return
-
-  grid.innerHTML = badges
-    .map(
-      (b) => `
-    <div class="badge-item ${b.unlocked ? 'unlocked' : 'locked'}${b.displayed ? ' displayed' : ''}"
-         onclick="toggleBadgeDisplay(this, '${b.icon}', '${b.name}')" data-badge-id="${b.id}">
-      <div class="badge-icon">${b.icon}</div>
-      <div class="badge-name">${b.name}</div>
-      <div class="badge-display-indicator" style="display: ${b.displayed ? 'block' : 'none'};">展示中</div>
-    </div>`
-    )
-    .join('')
-}
-
-export function renderRewards(rewards) {
-  const list = document.getElementById('rewardList')
+/** 展示所有已获得奖励：解锁勋章 + 已解锁礼包/悦己奖励 */
+export function renderMyRewards(rewards = [], badges = []) {
+  const list = document.getElementById('myRewardsList')
   if (!list) return
 
-  list.innerHTML = rewards
-    .map(
-      (r) => `
-    <div class="task-item" data-reward-id="${r.id}">
-      <div class="task-content">
-        <div class="task-title">${r.name}</div>
-        <div class="task-meta">${r.description || '自定义奖励'}</div>
+  const items = []
+  for (const r of rewards || []) {
+    if (r.status !== 'unlocked') continue
+    const desc = r.description || '已获得奖励'
+    const isPandora = /潘多拉/.test(desc)
+    const isPlanPack = /计划完成|完成本期|点亮星球后/.test(desc)
+    items.push({
+      id: `reward-${r.id}`,
+      icon: isPandora ? '🎁' : isPlanPack ? '🎟️' : '✨',
+      name: r.name,
+      desc,
+      tag: isPandora ? '潘多拉' : isPlanPack ? '计划礼包' : '悦己奖励',
+    })
+  }
+  for (const b of badges || []) {
+    if (!b.unlocked) continue
+    items.push({
+      id: `badge-${b.id}`,
+      icon: b.icon || '🎖️',
+      name: b.name,
+      desc: '成就勋章',
+      tag: '勋章',
+      badge: b,
+    })
+  }
+
+  if (!items.length) {
+    list.innerHTML =
+      '<div class="my-rewards-empty">还没有获得奖励，完成行动、点亮星球后会出现在这里</div>'
+    return
+  }
+
+  list.innerHTML = items
+    .map((item) => {
+      const click =
+        item.badge != null
+          ? `onclick="toggleBadgeDisplay(this, '${String(item.icon).replace(/'/g, "\\'")}', '${String(item.name).replace(/'/g, "\\'")}')" data-badge-id="${item.badge.id}"`
+          : ''
+      const displayed =
+        item.badge?.displayed
+          ? '<span class="my-reward-tag is-display">展示中</span>'
+          : `<span class="my-reward-tag">${escapeHtml(item.tag)}</span>`
+      return `
+    <div class="my-reward-item${item.badge ? ' is-badge' : ''}" ${click}>
+      <div class="my-reward-icon">${item.icon}</div>
+      <div class="my-reward-info">
+        <div class="my-reward-name">${escapeHtml(item.name)}</div>
+        <div class="my-reward-desc">${escapeHtml(item.desc)}</div>
       </div>
-      <div class="task-tag" style="background: rgba(212, 185, 106, 0.2); color: var(--accent-gold);">${r.status === 'locked' ? '待解锁' : '已解锁'}</div>
+      ${displayed}
     </div>`
-    )
+    })
     .join('')
 }
 
@@ -361,11 +406,25 @@ export function renderMember(user) {
   }
 }
 
-/** 与点亮行动一致：完成率 = 星球 Lv / 满级 */
+/** 与点亮行动一致：优先用后端 progress_percent（含碎片），否则 Lv/满级 */
 function planetLevelInfo(planet) {
   const maxLevel = planet?.max_level || 7
   const level = Math.min(Math.max(0, Number(planet?.level) || 0), maxLevel)
-  const percent = maxLevel ? Math.round((level / maxLevel) * 100) : 0
+  const fragments = Math.min(
+    Math.max(0, Number(planet?.energy_fragments) || 0),
+    Number(planet?.fragments_per_light) || 7
+  )
+  const perLight = Number(planet?.fragments_per_light) || 7
+  const fromApi = Number(planet?.progress_percent)
+  let percent
+  if (Number.isFinite(fromApi)) {
+    percent = Math.min(100, Math.max(0, Math.round(fromApi)))
+  } else if (level >= maxLevel) {
+    percent = 100
+  } else {
+    const total = maxLevel * perLight
+    percent = total ? Math.round(((level * perLight + fragments) / total) * 100) : 0
+  }
   return { level, maxLevel, percent }
 }
 
@@ -393,10 +452,17 @@ function renderMiniPlanetIcon(type, litRatio) {
 export function renderProgress(data) {
   const order = Object.keys(PLANET_CONFIG)
   const byType = Object.fromEntries((data.planets || []).map((p) => [p.planet_type, p]))
+  const completeSet = new Set(data?.demo_guides?.plan_complete_planets || [])
 
-  // 一律以点亮行动的星球 Lv 为准（与 Lv.x/7 同步）
+  // 真实点亮进度；满级（计划完成）的星球进度 100%，奖励礼包高亮闪烁
   const levelInfos = Object.fromEntries(
-    order.map((type) => [type, planetLevelInfo(byType[type])])
+    order.map((type) => {
+      const info = planetLevelInfo(byType[type])
+      if (completeSet.has(type) || info.level >= info.maxLevel) {
+        return [type, { ...info, level: info.maxLevel, percent: 100 }]
+      }
+      return [type, info]
+    })
   )
   const rates = order.map((type) => levelInfos[type].percent)
   const overall = Math.round(rates.reduce((a, b) => a + b, 0) / (rates.length || 1))
@@ -449,12 +515,15 @@ export function renderProgress(data) {
           const status = goalStatusMap[type] || 'active'
           const statusTip =
             status === 'paused' ? '已暂停' : status === 'abandoned' ? '已放弃' : ''
+          const planDone = percent >= 100 || completeSet.has(type)
+          // 计划完成：奖励礼包持续闪烁高亮，引导领取
+          const packBlink = planDone ? ' is-blink is-claimable' : ''
           return `
-      <div class="dimension-item${status !== 'active' ? ` is-${status}` : ''}" data-planet-type="${type}">
+      <div class="dimension-item${status !== 'active' ? ` is-${status}` : ''}${planDone ? ' is-plan-complete' : ''}" data-planet-type="${type}">
         ${renderMiniPlanetIcon(type, litRatio)}
         <div class="dimension-info">
           <div class="dimension-name">
-            <span class="dimension-title">${planetName}-计划已完成${percent}%<span class="dimension-lv">Lv.${level}/${maxLevel}</span>${statusTip ? `<span class="dimension-status-tag">${statusTip}</span>` : ''}</span>
+            <span class="dimension-title">${planetName}-点亮进度${percent}%<span class="dimension-lv">Lv.${level}/${maxLevel}</span>${statusTip ? `<span class="dimension-status-tag">${statusTip}</span>` : ''}${planDone ? '<span class="dimension-status-tag is-complete">计划完成</span>' : ''}</span>
           </div>
           <div class="dimension-bottom">
             <div class="dimension-bar-wrap">
@@ -463,8 +532,8 @@ export function renderProgress(data) {
               </div>
             </div>
             <div class="dimension-goal-actions">
-              <button type="button" class="dimension-goal-btn" onclick="viewTimeGoal('${type}')">查看目标</button>
-              <button type="button" class="dimension-goal-btn" onclick="viewRewardPack('${type}')">奖励礼包</button>
+              <button type="button" class="dimension-goal-btn" onclick="viewTimeGoal('${type}')">查看计划</button>
+              <button type="button" class="dimension-goal-btn dimension-reward-pack-btn${packBlink}" onclick="viewRewardPack('${type}')">${planDone ? '领取礼包' : '奖励礼包'}</button>
             </div>
           </div>
         </div>
@@ -673,7 +742,7 @@ function renderGrowthStars(stars, classPrefix = 'growth-stars') {
     </div>`
 }
 
-/** 周末复盘「本周总结」：指标卡片版 */
+/** 周行动回顾：指标卡片版 */
 export function renderGrowthReport(data, overall, rootId = 'weekendGrowthReport') {
   const root = document.getElementById(rootId)
   if (!root) return
@@ -1122,16 +1191,8 @@ export function renderPlanPhases(phases, coreGoal, plans = [], activePlanId = nu
     .join('')
 }
 
-export function renderStreak(streak) {
-  const badge = document.getElementById('streakBadge')
-  if (!badge || !streak) return
-  if (streak.current > 0) {
-    badge.textContent = `🔥 连续 ${streak.current} 天`
-    badge.classList.add('show')
-  } else {
-    badge.textContent = ''
-    badge.classList.remove('show')
-  }
+export function renderStreak(_streak) {
+  // 今日行动区不再展示「连续 N 天」，避免制造焦虑
 }
 
 export function renderWeekendReview(review) {
@@ -1148,10 +1209,10 @@ export function renderWeekendReview(review) {
   const lockTag = document.getElementById('weekendReviewLockTag')
 
   if (titleEl) {
-    titleEl.textContent = review.period === 'current' ? '周复盘 · 本周' : '周复盘 · 上周'
+    titleEl.textContent = review.period === 'current' ? '周行动回顾 · 本周' : '周行动回顾 · 上周'
   }
   text.textContent = review.message
-  if (btn) btn.textContent = review.button_label || (review.period === 'current' ? '查看本周总结' : '查看上周总结')
+  if (btn) btn.textContent = review.button_label || (review.period === 'current' ? '查看本周行动回顾' : '查看上周行动回顾')
   if (lockTag) {
     lockTag.classList.toggle('hidden', !review.current_week_locked)
   }

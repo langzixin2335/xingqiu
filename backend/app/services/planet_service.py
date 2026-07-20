@@ -21,12 +21,56 @@ def get_planet_max_level(db: Session | None = None, user_id: int | None = None, 
     return PLANET_MAX_LEVEL
 
 
+def compute_progress_percent(level: int, fragments: int, max_level: int = PLANET_MAX_LEVEL) -> int:
+    """点亮总进度：已点亮等级 + 当前碎片进度。"""
+    if max_level <= 0:
+        return 0
+    level = min(max(0, int(level or 0)), max_level)
+    fragments = min(max(0, int(fragments or 0)), FRAGMENTS_PER_LIGHT)
+    if level >= max_level:
+        return 100
+    total_units = max_level * FRAGMENTS_PER_LIGHT
+    earned = level * FRAGMENTS_PER_LIGHT + fragments
+    return min(100, round(earned / total_units * 100))
+
+
+def _merge_duplicate_planets(db: Session, user_id: int) -> dict[str, PlanetProgress]:
+    """同一类型只保留一行：合并等级/碎片，删除重复行。"""
+    rows = (
+        db.query(PlanetProgress)
+        .filter(PlanetProgress.user_id == user_id)
+        .order_by(PlanetProgress.id.asc())
+        .all()
+    )
+    kept: dict[str, PlanetProgress] = {}
+    dirty = False
+    for planet in rows:
+        key = planet.planet_type
+        if key not in kept:
+            kept[key] = planet
+            continue
+        primary = kept[key]
+        primary.level = max(int(primary.level or 0), int(planet.level or 0))
+        # 重复行曾分别收到碎片时用求和；同进度镜像时另一行多为 0
+        primary.energy_fragments = min(
+            FRAGMENTS_PER_LIGHT,
+            int(primary.energy_fragments or 0) + int(planet.energy_fragments or 0),
+        )
+        primary.active = bool(primary.active) or bool(planet.active)
+        extra_task = (planet.current_task or "").strip()
+        primary_task = (primary.current_task or "").strip()
+        if extra_task and (not primary_task or primary_task in {"暂未点亮", "暂无任务"}):
+            primary.current_task = extra_task
+        db.delete(planet)
+        dirty = True
+    if dirty:
+        db.flush()
+    return kept
+
+
 def ensure_all_planets(db: Session, user_id: int) -> list[PlanetProgress]:
-    """保证五种时间星球齐全（含好看星球）。"""
-    existing = {
-        p.planet_type: p
-        for p in db.query(PlanetProgress).filter(PlanetProgress.user_id == user_id).all()
-    }
+    """保证五种时间星球齐全，并清理历史重复行。"""
+    existing = _merge_duplicate_planets(db, user_id)
     created = False
     for planet_type in PLANET_TYPES:
         if planet_type in existing:
@@ -44,18 +88,15 @@ def ensure_all_planets(db: Session, user_id: int) -> list[PlanetProgress]:
         created = True
     if created:
         db.flush()
-    # 按固定五种顺序返回，避免缺颗或乱序
     return [existing[t] for t in PLANET_TYPES if t in existing]
 
 
 def _get_or_create_planet(db: Session, user_id: int, planet_type: str) -> PlanetProgress:
-    planet = (
-        db.query(PlanetProgress)
-        .filter(PlanetProgress.user_id == user_id, PlanetProgress.planet_type == planet_type)
-        .first()
-    )
-    if planet:
-        return planet
+    """始终返回去重后的唯一星球行，避免碎片写到 A、展示读到 B。"""
+    planets = ensure_all_planets(db, user_id)
+    for planet in planets:
+        if planet.planet_type == planet_type:
+            return planet
     planet = PlanetProgress(
         user_id=user_id,
         planet_type=planet_type,
@@ -123,8 +164,8 @@ def planet_to_out(db: Session, user_id: int, planet: PlanetProgress) -> PlanetOu
     if int(planet.level or 0) > max_level:
         planet.level = max_level
         db.flush()
-    percent = round(level / max_level * 100) if max_level else 0
     fragments = int(planet.energy_fragments or 0)
+    percent = compute_progress_percent(level, fragments, max_level)
     ready = fragments >= FRAGMENTS_PER_LIGHT and level < max_level
     return PlanetOut(
         planet_type=planet.planet_type,

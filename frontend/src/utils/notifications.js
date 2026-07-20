@@ -169,9 +169,7 @@ export function readDailyReminderForm(root, options = {}) {
     form.querySelector('#encourageTimeInput')?.value || '07:00'
   )
   const activePlanet =
-    options.timeType ||
-    form.querySelector('#encouragePlanetOptions .time-type-tag.selected')?.dataset?.type ||
-    'survival'
+    options.timeType || 'survival'
   const timeType = ['survival', 'money', 'beauty', 'fun', 'flow'].includes(activePlanet)
     ? activePlanet
     : 'survival'

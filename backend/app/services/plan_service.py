@@ -136,12 +136,10 @@ def delete_plan_data(db: Session, user_id: int, plan_id: int) -> None:
 
 
 def _sync_planets(db: Session, user_id: int, goals: list) -> None:
-    from .planet_service import PLANET_MAX_LEVEL
+    from .planet_service import PLANET_MAX_LEVEL, ensure_all_planets
 
-    existing = {
-        p.planet_type: p
-        for p in db.query(PlanetProgress).filter(PlanetProgress.user_id == user_id).all()
-    }
+    # 先去重，避免同类型目标循环创建时重复插入星球行
+    existing = {p.planet_type: p for p in ensure_all_planets(db, user_id)}
     active_types = set()
     for goal in goals:
         time_type = goal.time_type if hasattr(goal, "time_type") else goal["time_type"]
@@ -154,16 +152,16 @@ def _sync_planets(db: Session, user_id: int, goals: list) -> None:
             # 建计划只同步激活状态与当前目标，不抬等级
             planet.level = min(int(planet.level or 0), PLANET_MAX_LEVEL)
         else:
-            db.add(
-                PlanetProgress(
-                    user_id=user_id,
-                    planet_type=time_type,
-                    level=0,
-                    current_task=title[:20],
-                    active=True,
-                    energy_fragments=0,
-                )
+            planet = PlanetProgress(
+                user_id=user_id,
+                planet_type=time_type,
+                level=0,
+                current_task=title[:20],
+                active=True,
+                energy_fragments=0,
             )
+            db.add(planet)
+            existing[time_type] = planet
 
     for planet_type, planet in existing.items():
         if planet_type not in active_types:

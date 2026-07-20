@@ -37,9 +37,9 @@
                     <span class="icon">🗺️</span>
                     已安放的计划
                 </div>
-                <div class="card-desc">之前订好的计划都在这里；回家园「我的计划」也可切换查看</div>
+                <div class="card-desc">之前订好的计划都在这里；回星球「成长奖励 → 查看计划」也可切换查看</div>
                 <div class="saved-plans-list" id="savedPlansList"></div>
-                <button type="button" class="btn btn-secondary" onclick="goHomeAfterPlan()" style="margin-top: 12px;">去家园查看全部</button>
+                <button type="button" class="btn btn-secondary" onclick="goHomeAfterPlan()" style="margin-top: 12px;">去星球查看全部</button>
             </div>
     
             <!-- 已有目标计划区域 -->
@@ -215,18 +215,6 @@
 
                 <div class="daily-goal-form">
                     <div class="input-group">
-                        <label class="input-label">选择要开启的星球</label>
-                        <div class="time-types" id="encouragePlanetOptions">
-                            <div class="time-type-tag survival is-lit selected" data-type="survival" onclick="selectEncouragePlanet('survival')">生存星球</div>
-                            <div class="time-type-tag money" data-type="money" onclick="selectEncouragePlanet('money')">赚钱星球</div>
-                            <div class="time-type-tag beauty" data-type="beauty" onclick="selectEncouragePlanet('beauty')">好看星球</div>
-                            <div class="time-type-tag fun" data-type="fun" onclick="selectEncouragePlanet('fun')">好玩星球</div>
-                            <div class="time-type-tag flow" data-type="flow" onclick="selectEncouragePlanet('flow')">心流星球</div>
-                        </div>
-                        <div class="goal-mode-hint">选中计划对应的星球；点「保存这颗星球的鼓励」后会点亮</div>
-                    </div>
-
-                    <div class="input-group">
                         <label class="input-label">想对自己说的话</label>
                         <div class="period-selector" id="encourageModeOptions" role="group" aria-label="鼓励写法">
                             <button type="button" class="period-btn selected" data-mode="single" onclick="setEncourageMode('single')">每天同一句</button>
@@ -269,7 +257,7 @@
                     </div>
 
                     <div class="input-group hidden" id="encourageAiBlock">
-                        <div class="goal-mode-hint">按当前星球写好几句；每天送达时随机挑一句。</div>
+                        <div class="goal-mode-hint">帮你写好几句；每天送达时随机挑一句。</div>
                         <button type="button" class="btn btn-secondary" id="encourageAiBtn" onclick="generateEncourageByAi()">✨ 帮我生成</button>
                         <div class="encourage-phrase-list" id="encourageAiPhraseList"></div>
                     </div>
@@ -334,7 +322,7 @@
                     </div>
                 </div>
 
-                <button class="btn btn-secondary" id="addEncourageBtn">+ 保存这颗星球的鼓励</button>
+                <button class="btn btn-secondary" id="addEncourageBtn">+ 保存每日鼓励</button>
                 <div class="goal-list reminder-list" id="reminderList"></div>
             </div>
     
@@ -344,18 +332,6 @@
     
         <div class="bottom-bar">
             <button class="btn btn-primary" onclick="confirmPlan()">开启我的星球旅程</button>
-        </div>
-
-        <!-- 保存成功：回家园 / 再订一条 -->
-        <div class="invite-modal-overlay hidden" id="planSavedOverlay">
-            <div class="invite-modal-card">
-                <div class="invite-modal-title">计划已安放好</div>
-                <p class="plan-saved-desc" id="planSavedDesc">之前的计划不会消失。点「回家园」在「我的计划」里切换查看；或继续再订一条。</p>
-                <div class="btn-row" style="margin-top: 16px;">
-                    <button type="button" class="btn btn-secondary" onclick="startAnotherPlan()">再订一条</button>
-                    <button type="button" class="btn btn-primary" onclick="goHomeAfterPlan()">回家园查看</button>
-                </div>
-            </div>
         </div>
 
         <!-- 达成奖励礼包（与首页成长礼包一致） -->

@@ -147,16 +147,25 @@ def _unlock_rewards(db: Session, user_id: int, completion_rate: int) -> list[dic
 
 
 def compute_dimension_progress(db: Session, user_id: int) -> dict[str, int]:
-    """五种星球完成率：按点亮等级 / 满级(7) 计算。"""
-    from .planet_service import PLANET_MAX_LEVEL, PLANET_TYPES, ensure_all_planets
+    """五种星球完成率：点亮等级 + 当前碎片进度。"""
+    from .planet_service import (
+        PLANET_TYPES,
+        compute_progress_percent,
+        ensure_all_planets,
+    )
 
     planets = ensure_all_planets(db, user_id)
     by_type = {p.planet_type: p for p in planets}
     result = {}
     for t in PLANET_TYPES:
         planet = by_type.get(t)
-        level = min(max(0, int(planet.level or 0)), PLANET_MAX_LEVEL) if planet else 0
-        result[t] = min(100, round(level / PLANET_MAX_LEVEL * 100)) if PLANET_MAX_LEVEL else 0
+        if not planet:
+            result[t] = 0
+            continue
+        result[t] = compute_progress_percent(
+            int(planet.level or 0),
+            int(planet.energy_fragments or 0),
+        )
     return result
 
 
@@ -230,25 +239,25 @@ def compute_planet_growth_speed(db: Session, user_id: int) -> dict[str, dict]:
 
 
 def get_weekend_review(db: Session, user_id: int) -> dict | None:
-    """周复盘：工作日看上一周；周六日才解锁本周。"""
+    """周行动回顾：平日看上一周；周日才解锁本周复盘。"""
     today = date.today()
     weekday = today.weekday()  # 0=周一 ... 6=周日
-    is_weekend = weekday in (5, 6)
+    is_sunday = weekday == 6
     this_monday = today - timedelta(days=weekday)
 
-    if is_weekend:
+    if is_sunday:
         week_start = this_monday
         week_end = this_monday + timedelta(days=6)
         period = "current"
-        title = "本周总结"
-        button_label = "查看本周总结"
+        title = "本周行动回顾"
+        button_label = "查看本周行动回顾"
         current_week_locked = False
     else:
         week_start = this_monday - timedelta(days=7)
         week_end = this_monday - timedelta(days=1)
         period = "previous"
-        title = "上周总结"
-        button_label = "查看上周总结"
+        title = "上周行动回顾"
+        button_label = "查看上周行动回顾"
         current_week_locked = True
 
     start_s = week_start.isoformat()
@@ -265,21 +274,22 @@ def get_weekend_review(db: Session, user_id: int) -> dict | None:
     streak = _get_or_create_streak(db, user_id)
     week_label = f"{week_start.month}月{week_start.day}日 - {week_end.month}月{week_end.day}日"
     count = len(logs)
+    streak_days = streak.current_streak
 
-    if is_weekend:
+    if is_sunday:
         message = (
-            f"{week_label}：已完成 {count} 项任务，连续打卡 {streak.current_streak} 天。"
-            f"本周复盘已解锁，适合停下看看，再轻轻调整下周节奏。"
+            f"本周（{week_label}）已完成{count}个行动，连续保持行动{streak_days}天。"
+            f"本周复盘已解锁，欢迎查看；"
         )
     else:
         message = (
-            f"上周（{week_label}）已完成 {count} 项任务，连续打卡 {streak.current_streak} 天。"
-            f"本周复盘将在周六解锁，工作日可先回看上周。"
+            f"上周（{week_label}）已完成{count}个行动，连续保持行动{streak_days}天。"
+            f"本周复盘将在周日解锁，敬请期待；"
         )
 
     return {
         "week_completions": count,
-        "current_streak": streak.current_streak,
+        "current_streak": streak_days,
         "message": message,
         "period": period,
         "week_label": week_label,

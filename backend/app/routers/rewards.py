@@ -28,10 +28,24 @@ def add_reward(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    # 同名已获得奖励不重复写入
+    existing = (
+        db.query(UserReward)
+        .filter(
+            UserReward.user_id == current_user.id,
+            UserReward.name == payload.name,
+            UserReward.status == "unlocked",
+        )
+        .first()
+    )
+    if existing and payload.status == "unlocked":
+        return existing
+
     reward = UserReward(
         user_id=current_user.id,
         name=payload.name,
         description=payload.description or "自定义奖励",
+        status=payload.status or "locked",
     )
     db.add(reward)
     db.commit()

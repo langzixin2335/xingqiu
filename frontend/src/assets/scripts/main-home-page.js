@@ -12,15 +12,14 @@ import { initPushNotifications, unregisterPushNotifications } from '../../utils/
 import { showToast } from '../../utils/ui.js'
 import { useUserStore } from '../../stores/user'
 import {
-  renderBadges,
   renderCommunity,
   renderGrowthReport,
   renderMember,
+  renderMyRewards,
   renderPlanets,
   renderPlanPhases,
   renderProducts,
   renderProgress,
-  renderRewards,
   renderStreak,
   renderTasks,
   renderWeekendReview,
@@ -57,6 +56,40 @@ let currentCategory = 'all'
 let currentSubcategory = 'recommended'
 let dashboardData = null
 let inviteShareText = ''
+let inviteShareUrl = ''
+
+function isWechatBrowser() {
+  return /MicroMessenger/i.test(navigator.userAgent || '')
+}
+
+function buildLocalInviteUrl(code) {
+  const origin = window.location.origin || 'https://xq.dongme.me'
+  const codePart = encodeURIComponent(code || '')
+  if (window.location.hash && window.location.hash.startsWith('#/')) {
+    return `${origin}/#/welcome?invite=${codePart}`
+  }
+  return `${origin}/?invite=${codePart}`
+}
+
+function openInviteShareModal({ title, desc, shareText, shareUrl, showAccept }) {
+  inviteShareText = shareText || ''
+  inviteShareUrl = shareUrl || ''
+  const titleEl = document.getElementById('inviteModalTitle')
+  const descEl = document.getElementById('inviteShareDesc')
+  const urlEl = document.getElementById('inviteShareUrl')
+  const hintEl = document.getElementById('inviteShareHint')
+  const acceptRow = document.getElementById('inviteAcceptRow')
+  if (titleEl) titleEl.textContent = title
+  if (descEl) descEl.textContent = desc
+  if (urlEl) urlEl.textContent = inviteShareUrl || '链接生成中…'
+  if (hintEl) {
+    hintEl.textContent = isWechatBrowser()
+      ? '点「微信分享」后，按右上角提示发给好友'
+      : '也可复制链接，粘贴到微信聊天发送'
+  }
+  acceptRow?.classList.toggle('hidden', !showAccept)
+  document.getElementById('inviteModalOverlay')?.classList.remove('hidden')
+}
 let dailySummaryShownToday = false
 let pendingCompleteTaskId = null
 let pendingLightPlanetType = null
@@ -205,10 +238,34 @@ const PANDORA_REWARDS = [
   { icon: '🏕️', title: '线下训练营9折折扣券' },
 ]
 
-function showPandoraBox(planetType) {
+function showPandoraBox(planetType, planetInfo = null) {
   pendingLightPlanetType = planetType
+  const planetName = PLANET_FRAGMENT_NAME[planetType] || '闪耀星球'
   const nameEl = document.getElementById('pandoraPlanetName')
-  if (nameEl) nameEl.textContent = PLANET_FRAGMENT_NAME[planetType] || '闪耀星球'
+  if (nameEl) nameEl.textContent = planetName
+
+  const level = Math.max(1, Number(planetInfo?.level) || 1)
+  const maxLevel = Math.max(level, Number(planetInfo?.max_level) || 7)
+  const isMax = level >= maxLevel
+  const upgradeEl = document.getElementById('pandoraUpgradeText')
+  const descEl = document.getElementById('pandoraDescText')
+  if (upgradeEl) {
+    upgradeEl.textContent = isMax
+      ? `恭喜！${planetName}已升至满级 Lv.${level}`
+      : `恭喜升级至 Lv.${level}`
+  }
+  if (descEl) {
+    if (isMax) {
+      descEl.innerHTML = `${planetName}已完全点亮，对应计划已全部完成<br>领取潘多拉奖励后，可前往「成长奖励」领取计划完成礼包`
+    } else {
+      const levelLine =
+        level <= 1
+          ? `首次点亮成功，亮度升至 Lv.1`
+          : `星球亮度提升一级（Lv.${level - 1} → Lv.${level}）`
+      descEl.innerHTML = `${levelLine}，获得潘多拉魔盒一个<br>打开即可领取奖励`
+    }
+  }
+
   document.getElementById('pandoraBoxOverlay')?.classList.remove('hidden')
 }
 
@@ -241,7 +298,7 @@ function handleTaskEffects(effects) {
 }
 
 function updateProgress() {
-  // 今日行动右侧已改为「每日完成曲线」入口，进度文案不再更新
+  // 「AI体验专区说明」入口在成长总览右上角
 }
 
 function drawCompletionChart(canvasId = 'completionChartModal') {
@@ -373,8 +430,7 @@ async function loadDashboard() {
       limit: COMMUNITY_LIMIT_BY_LEVEL[communityExpandLevel] || 10,
     })
     renderProducts(data.products)
-    renderBadges(data.badges)
-    renderRewards(data.rewards)
+    renderMyRewards(data.rewards, data.badges)
     renderMember(data.user)
     renderProgress(data)
     setTimeout(() => {
@@ -517,11 +573,14 @@ export function initMainHomeView(router) {
     }
   }
 
-  window.switchTab = (tabName) => {
+  window.switchTab = (tabName, evt) => {
     document.querySelectorAll('.tab-content').forEach((el) => el.classList.remove('active'))
     document.getElementById(`tab-${tabName}`)?.classList.add('active')
     document.querySelectorAll('.tab-item').forEach((el) => el.classList.remove('active'))
-    event.currentTarget?.classList.add('active')
+    const fromEvent = evt?.currentTarget
+    const tabBtn =
+      fromEvent || document.querySelector(`.tab-item[data-tab="${tabName}"]`)
+    tabBtn?.classList.add('active')
 
     const titles = {
       plan: '我的<span>星际旅程</span>',
@@ -539,22 +598,103 @@ export function initMainHomeView(router) {
     const pageSubtitle = document.getElementById('pageSubtitle')
     if (pageTitle) pageTitle.innerHTML = titles[tabName]
     if (pageSubtitle) pageSubtitle.textContent = subtitles[tabName]
-
   }
 
-  window.openDailyCompletionCurve = () => {
-    const overlay = document.getElementById('dailyCurveOverlay')
-    if (!overlay) return
-    overlay.classList.remove('hidden')
-    // 等弹层显示后再量尺寸绘制，与成长奖励同款曲线
-    requestAnimationFrame(() => {
-      setTimeout(() => drawCompletionChart('completionChartModal'), 40)
-    })
+  const AI_ACTION_MODE_KEY = 'sp_ai_action_mode'
+
+  function applyAiActionModeHint(mode) {
+    const descEl = document.getElementById('todayActionsDesc')
+    if (!descEl || !mode) return
+    if (mode === 'easy') {
+      descEl.textContent = '轻松模式：今日行动已为你减负，先完成一件就很好'
+    } else if (mode === 'advanced') {
+      descEl.textContent = '进阶模式：今日行动已拉高强度，冲一冲更深的点亮'
+    }
   }
 
-  window.closeDailyCompletionCurve = () => {
-    document.getElementById('dailyCurveOverlay')?.classList.add('hidden')
+  window.resetAiZonePanel = () => {
+    document.getElementById('aiZoneActions')?.classList.remove('hidden')
+    document.getElementById('aiZoneFooter')?.classList.remove('hidden')
+    const leads = document.querySelectorAll('#aiMemberZoneOverlay .ai-member-zone-lead')
+    if (leads[0]) leads[0].textContent = '说明1：无手动切换入口，正式版由AI全自动调度，用户完全不感知；'
+    if (leads[1]) leads[1].textContent = '说明2：模拟触发入口，仅做页面交互和预警弹窗，用户行为判断规则、AI个性化微调模型等后续开发。'
   }
+
+  window.openAiMemberZoneInfo = () => {
+    window.resetAiZonePanel()
+    document.getElementById('aiMemberZoneOverlay')?.classList.remove('hidden')
+  }
+
+  window.closeAiMemberZoneInfo = () => {
+    document.getElementById('aiMemberZoneOverlay')?.classList.add('hidden')
+    window.resetAiZonePanel()
+  }
+
+  window.openAiChurnWakeModal = () => {
+    document.getElementById('aiChurnWakeOverlay')?.classList.remove('hidden')
+  }
+
+  window.closeAiChurnWakeModal = () => {
+    document.getElementById('aiChurnWakeOverlay')?.classList.add('hidden')
+  }
+
+  window.confirmAiChurnSwitchEasy = () => {
+    localStorage.setItem(AI_ACTION_MODE_KEY, 'easy')
+    applyAiActionModeHint('easy')
+    window.closeAiChurnWakeModal()
+    window.closeAiMemberZoneInfo()
+    window.openAiEasyModePage()
+  }
+
+  window.openAiEasyModePage = () => {
+    document.getElementById('aiEasyModePage')?.classList.remove('hidden')
+    document.body.classList.add('ai-mode-demo-open')
+  }
+
+  window.closeAiEasyModePage = () => {
+    document.getElementById('aiEasyModePage')?.classList.add('hidden')
+    document.body.classList.remove('ai-mode-demo-open')
+  }
+
+  window.openAiAdvancedModePage = () => {
+    document.getElementById('aiAdvancedModePage')?.classList.remove('hidden')
+    document.body.classList.add('ai-mode-demo-open')
+  }
+
+  window.closeAiAdvancedModePage = () => {
+    document.getElementById('aiAdvancedModePage')?.classList.add('hidden')
+    document.body.classList.remove('ai-mode-demo-open')
+  }
+
+  window.notifyAiModeDemoOnly = () => {
+    showToast('Demo 仅展示界面', { duration: 2000 })
+  }
+
+  window.triggerAiExperience = (type) => {
+    if (type === 'easy') {
+      localStorage.setItem(AI_ACTION_MODE_KEY, 'easy')
+      applyAiActionModeHint('easy')
+      window.closeAiMemberZoneInfo()
+      window.openAiEasyModePage()
+      return
+    }
+    if (type === 'advanced') {
+      localStorage.setItem(AI_ACTION_MODE_KEY, 'advanced')
+      applyAiActionModeHint('advanced')
+      window.closeAiMemberZoneInfo()
+      window.openAiAdvancedModePage()
+      return
+    }
+    if (type === 'wake') {
+      // 居中挽留弹窗，不跳转新页面
+      window.closeAiMemberZoneInfo()
+      window.openAiChurnWakeModal()
+    }
+  }
+
+  // 兼容旧入口名
+  window.openDailyCompletionCurve = window.openAiMemberZoneInfo
+  window.closeDailyCompletionCurve = window.closeAiMemberZoneInfo
 
   const PLANET_QUOTE_LABEL = {
     survival: '生存',
@@ -621,7 +761,7 @@ export function initMainHomeView(router) {
       if (!reminders.length) {
         return {
           empty: true,
-          html: `<div class="daily-quote-empty">还没有设置成长语录。<br>去制定计划时写下「每日爱的鼓励」，明天就能在这里查收啦。</div>`,
+          html: `<div class="daily-quote-empty">还没有设置爱的鼓励。<br>去制定计划时写下「每日爱的鼓励」，明天就能在这里查收啦。</div>`,
         }
       }
       const cards = reminders.map((r) => {
@@ -658,7 +798,7 @@ export function initMainHomeView(router) {
     const body = document.getElementById('dailyQuoteBody')
     const overlay = document.getElementById('dailyQuoteOverlay')
     if (!overlay || !body) return
-    body.innerHTML = `<div class="daily-quote-empty">正在为你翻开今日那一页…</div>`
+    body.innerHTML = `<div class="daily-quote-empty">正在为你打开今日的爱的鼓励…</div>`
     overlay.classList.remove('hidden')
     const result = await loadTodayGrowthQuotes()
     body.innerHTML = result.html
@@ -778,40 +918,166 @@ export function initMainHomeView(router) {
     }
   }
 
-  window.shareTask = async (btn) => {
-    const taskItem = btn.closest('.task-item')
-    const taskTitle = taskItem?.querySelector('.task-title')?.textContent?.trim()
-    const timeType = taskItem?.dataset.timeType || 'survival'
-    if (!taskTitle) return
+  let pendingShareTask = null
+
+  window.closeTaskShareChoice = () => {
+    document.getElementById('taskShareChoiceOverlay')?.classList.add('hidden')
+  }
+
+  async function openWechatShareForTask({ taskTitle, timeType, isCompleted }) {
+    const modalTitle = isCompleted ? '分享给微信好友' : '邀约伙伴'
+    const modalDesc = isCompleted
+      ? '把完成动态分享给微信好友，一起闪闪发光'
+      : '生成专属链接，通过微信发给伙伴一起打卡'
     try {
       const { data } = await api.post('/invitations', {
         task_title: taskTitle,
         time_type: timeType,
       })
-      inviteShareText = data.share_text
-      const textEl = document.getElementById('inviteShareText')
-      if (textEl) textEl.textContent = data.share_text
-      document.getElementById('inviteModalOverlay')?.classList.remove('hidden')
+      const shareUrl = data.share_url || buildLocalInviteUrl(data.invite_code)
+      const shareText = isCompleted
+        ? `✨ 我在闪耀星球完成了「${taskTitle}」！\n一起来打卡：${shareUrl}`
+        : data.share_text || `✨ 邀请你一起打卡「${taskTitle}」\n${shareUrl}`
+      openInviteShareModal({
+        title: modalTitle,
+        desc: modalDesc,
+        shareText,
+        shareUrl,
+        showAccept: !isCompleted,
+      })
     } catch {
-      inviteShareText = `✨ 邀请你一起在闪耀星球打卡！\n任务：${taskTitle}\n一起坚持，共同成长！`
-      const textEl = document.getElementById('inviteShareText')
-      if (textEl) textEl.textContent = inviteShareText
-      document.getElementById('inviteModalOverlay')?.classList.remove('hidden')
+      const fallbackCode = `local-${Date.now().toString(36)}`
+      const shareUrl = buildLocalInviteUrl(fallbackCode)
+      openInviteShareModal({
+        title: modalTitle,
+        desc: modalDesc,
+        shareText: isCompleted
+          ? `✨ 我在闪耀星球完成了「${taskTitle}」！\n一起来打卡：${shareUrl}`
+          : `✨ 邀请你一起在闪耀星球打卡！\n任务：${taskTitle}\n${shareUrl}`,
+        shareUrl,
+        showAccept: !isCompleted,
+      })
     }
+  }
+
+  window.shareTask = async (btn) => {
+    const taskItem = btn.closest('.task-item')
+    const taskTitle = taskItem?.querySelector('.task-title')?.textContent?.trim()
+    const timeType = taskItem?.dataset.timeType || 'survival'
+    const isCompleted =
+      taskItem?.classList.contains('completed') || taskItem?.dataset.completed === '1'
+    if (!taskTitle) return
+
+    // 未完成：仍走邀约伙伴
+    if (!isCompleted) {
+      await openWechatShareForTask({ taskTitle, timeType, isCompleted: false })
+      return
+    }
+
+    // 已完成：先选分享去向
+    pendingShareTask = { taskTitle, timeType }
+    const descEl = document.getElementById('taskShareChoiceDesc')
+    if (descEl) descEl.textContent = `「${taskTitle}」已完成，选择分享方式`
+    document.getElementById('taskShareChoiceOverlay')?.classList.remove('hidden')
+  }
+
+  window.shareTaskToWechat = async () => {
+    const task = pendingShareTask
+    window.closeTaskShareChoice()
+    if (!task?.taskTitle) return
+    await openWechatShareForTask({
+      taskTitle: task.taskTitle,
+      timeType: task.timeType || 'survival',
+      isCompleted: true,
+    })
+  }
+
+  window.shareTaskToCommunity = async () => {
+    const task = pendingShareTask
+    window.closeTaskShareChoice()
+    if (!task?.taskTitle) return
+    const content = `我完成了「${task.taskTitle}」，继续闪闪发光 ✨`
+    try {
+      await api.post('/community/reflection', {
+        content,
+        task_title: task.taskTitle,
+        time_type: task.timeType || 'survival',
+      })
+      showToast('已分享至星球社区')
+      await loadDashboard()
+      document.getElementById('communityCard')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    } catch (err) {
+      showToast(err?.response?.data?.detail || '分享到社区失败，请稍后重试')
+    }
+  }
+
+  window.closeWechatShareGuide = () => {
+    document.getElementById('wechatShareGuideOverlay')?.classList.add('hidden')
   }
 
   window.closeInviteModal = () => {
     document.getElementById('inviteModalOverlay')?.classList.add('hidden')
+    window.closeWechatShareGuide?.()
   }
 
-  window.copyInviteText = async () => {
+  window.shareInviteToWechat = async () => {
+    if (!inviteShareUrl && !inviteShareText) {
+      showToast('链接还没准备好，请稍后再试')
+      return
+    }
+    // 微信内无法直接调起分享面板，展示「点右上角」引导
+    if (isWechatBrowser()) {
+      document.getElementById('wechatShareGuideOverlay')?.classList.remove('hidden')
+      return
+    }
+    // 系统分享（部分 App / 浏览器）
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: '闪耀星球 · 邀约伙伴',
+          text: inviteShareText || '一起来闪耀星球打卡',
+          url: inviteShareUrl,
+        })
+        return
+      } catch (err) {
+        if (err?.name === 'AbortError') return
+      }
+    }
+    await window.copyInviteLink()
+    showToast('链接已复制，打开微信粘贴发给好友吧')
+  }
+
+  window.copyInviteLink = async () => {
+    const text = inviteShareUrl || inviteShareText
+    if (!text) {
+      showToast('暂无可复制的链接')
+      return
+    }
     try {
-      await navigator.clipboard.writeText(inviteShareText)
-      alert('邀约文案已复制，快去分享给好友吧！')
+      await navigator.clipboard.writeText(text)
+      showToast('链接已复制')
     } catch {
-      alert(inviteShareText)
+      try {
+        const area = document.createElement('textarea')
+        area.value = text
+        area.setAttribute('readonly', '')
+        area.style.position = 'fixed'
+        area.style.left = '-9999px'
+        document.body.appendChild(area)
+        area.select()
+        document.execCommand('copy')
+        document.body.removeChild(area)
+        showToast('链接已复制')
+      } catch {
+        alert(text)
+      }
     }
   }
+
+  window.copyInviteText = window.copyInviteLink
 
   window.acceptInviteCode = async () => {
     const code = document.getElementById('inviteCodeInput')?.value?.trim()
@@ -843,10 +1109,10 @@ export function initMainHomeView(router) {
       btn.textContent = '点亮中'
     }
     try {
-      await api.post(`/home/planets/${planetType}/light`)
+      const { data: litPlanet } = await api.post(`/home/planets/${planetType}/light`)
       flashPlanet(planetType)
       await loadDashboard()
-      showPandoraBox(planetType)
+      showPandoraBox(planetType, litPlanet)
     } catch (err) {
       alert(err.response?.data?.detail || '点亮失败，请稍后重试')
     } finally {
@@ -857,11 +1123,21 @@ export function initMainHomeView(router) {
     }
   }
 
-  window.closePandoraLater = () => {
-    document.getElementById('pandoraBoxOverlay')?.classList.add('hidden')
+  async function grantObtainedReward({ name, description }) {
+    if (!name) return null
+    try {
+      const { data } = await api.post('/rewards', {
+        name,
+        description: description || '已获得奖励',
+        status: 'unlocked',
+      })
+      return data
+    } catch {
+      return null
+    }
   }
 
-  window.openPandoraNow = () => {
+  window.openPandoraNow = async () => {
     document.getElementById('pandoraBoxOverlay')?.classList.add('hidden')
     const reward = PANDORA_REWARDS[Math.floor(Math.random() * PANDORA_REWARDS.length)]
     const textEl = document.getElementById('pandoraRewardText')
@@ -870,11 +1146,46 @@ export function initMainHomeView(router) {
     if (iconEl) iconEl.textContent = reward.icon
     document.getElementById('pandoraRewardOverlay')?.classList.remove('hidden')
     startFireworks('pandoraFireworksCanvas')
+    await grantObtainedReward({
+      name: reward.title,
+      description: '潘多拉魔盒奖励',
+    })
+    try {
+      const { data } = await api.get('/home/dashboard')
+      dashboardData = data
+      renderMyRewards(data.rewards, data.badges)
+    } catch {
+      /* ignore */
+    }
   }
 
   window.closePandoraReward = () => {
     stopFireworks()
     document.getElementById('pandoraRewardOverlay')?.classList.add('hidden')
+    const type = pendingLightPlanetType
+    const planet = dashboardData?.planets?.find((p) => p.planet_type === type)
+    const maxLevel = Number(planet?.max_level) || 7
+    const isMax = planet && Number(planet.level) >= maxLevel
+    pendingLightPlanetType = null
+    if (isMax) {
+      const name = PLANET_FRAGMENT_NAME[type] || '该星球'
+      showToast(`${name}计划已完成，前往成长奖励领取礼包`, { duration: 2800 })
+      if (dashboardData) {
+        const guides = dashboardData.demo_guides || {}
+        const list = new Set(guides.plan_complete_planets || [])
+        list.add(type)
+        dashboardData.demo_guides = { ...guides, plan_complete_planets: [...list] }
+        renderProgress(dashboardData)
+      }
+      setTimeout(() => {
+        window.switchTab?.('reward')
+        const btn = document.querySelector(
+          `#dimensionProgress .dimension-item[data-planet-type="${type}"] .dimension-reward-pack-btn`
+        )
+        btn?.classList.add('is-blink', 'is-claimable')
+        btn?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 350)
+    }
   }
 
   window.openReflectionInput = () => {
@@ -914,7 +1225,7 @@ export function initMainHomeView(router) {
     const review = dashboardData.weekend_review
     const modalTitle = document.getElementById('weekendSummaryModalTitle')
     if (modalTitle) {
-      modalTitle.textContent = review.title || (review.period === 'current' ? '本周总结' : '上周总结')
+      modalTitle.textContent = review.title || (review.period === 'current' ? '本周行动回顾' : '上周行动回顾')
     }
 
     const planets = dashboardData.planets || []
@@ -1029,12 +1340,23 @@ export function initMainHomeView(router) {
         task_title: taskName,
         time_type: 'survival',
       })
-      inviteShareText = data.share_text
-      const textEl = document.getElementById('inviteShareText')
-      if (textEl) textEl.textContent = data.share_text
-      document.getElementById('inviteModalOverlay')?.classList.remove('hidden')
+      const shareUrl = data.share_url || buildLocalInviteUrl(data.invite_code)
+      openInviteShareModal({
+        title: '分享给微信好友',
+        desc: `${userName} 完成了「${taskName}」，分享给微信好友吧`,
+        shareText: data.share_text || `✨ ${userName} 完成了「${taskName}」\n${shareUrl}`,
+        shareUrl,
+        showAccept: false,
+      })
     } catch {
-      alert(`分享动态\n\n${userName} 完成了「${taskName}」`)
+      const shareUrl = buildLocalInviteUrl(`post-${Date.now().toString(36)}`)
+      openInviteShareModal({
+        title: '分享给微信好友',
+        desc: `${userName} 完成了「${taskName}」，分享给微信好友吧`,
+        shareText: `✨ ${userName} 完成了「${taskName}」\n${shareUrl}`,
+        shareUrl,
+        showAccept: false,
+      })
     }
   }
 
@@ -1125,17 +1447,19 @@ export function initMainHomeView(router) {
   window.toggleBadgeDisplay = async (el, icon, name) => {
     if (el.classList.contains('locked')) return
     const badgeId = el.dataset.badgeId
+    if (!badgeId) return
     try {
       const { data } = await api.post(`/badges/${badgeId}/toggle-display`)
-      const indicator = el.querySelector('.badge-display-indicator')
       if (data.displayed) {
-        el.classList.add('displayed')
-        if (indicator) indicator.style.display = 'block'
         displayedBadges.push({ icon, name })
       } else {
-        el.classList.remove('displayed')
-        if (indicator) indicator.style.display = 'none'
         displayedBadges = displayedBadges.filter((b) => b.name !== name)
+      }
+      if (dashboardData?.badges) {
+        dashboardData.badges = dashboardData.badges.map((b) =>
+          String(b.id) === String(badgeId) ? { ...b, displayed: data.displayed } : b
+        )
+        renderMyRewards(dashboardData.rewards, dashboardData.badges)
       }
     } catch (e) {
       alert(e.response?.data?.detail || '操作失败')
@@ -1195,11 +1519,11 @@ export function initMainHomeView(router) {
     }
     if (pauseBtn) {
       if (status === 'paused') {
-        pauseBtn.textContent = '恢复目标'
+        pauseBtn.textContent = '恢复计划'
         pauseBtn.disabled = false
         pauseBtn.onclick = () => window.resumeTimeGoal()
       } else {
-        pauseBtn.textContent = '暂停目标'
+        pauseBtn.textContent = '暂停计划'
         pauseBtn.disabled = status === 'abandoned'
         pauseBtn.onclick = () => window.pauseTimeGoal()
       }
@@ -1219,9 +1543,22 @@ export function initMainHomeView(router) {
     const text = findTimeGoalText(type)
     const titleEl = document.getElementById('timeGoalModalTitle')
     const bodyEl = document.getElementById('timeGoalModalBody')
-    if (titleEl) titleEl.textContent = `${name}本期目标`
+    if (titleEl) titleEl.textContent = `${name} · 查看计划`
+    renderPlanPhases(
+      dashboardData?.plan_phases,
+      dashboardData?.core_goal,
+      dashboardData?.plans || [],
+      dashboardData?.active_plan_id
+    )
+    // 高亮当前时间星球相关阶段
+    document.querySelectorAll('#planPhaseTimeline .plan-phase-item').forEach((el) => {
+      const tag = el.querySelector('.plan-phase-tag')
+      const matched = tag?.classList?.contains(type)
+      el.classList.toggle('is-focus-type', Boolean(matched))
+    })
     if (bodyEl) {
-      bodyEl.textContent = text || '暂未设置具体目标，可点击下方「更新目标」去完善计划。'
+      bodyEl.textContent =
+        text || '暂未设置该星球相关阶段，可点击下方「更新计划」去完善。'
     }
     syncTimeGoalModalActions(type)
     document.getElementById('timeGoalModalOverlay')?.classList.remove('hidden')
@@ -1231,7 +1568,7 @@ export function initMainHomeView(router) {
     const type = activeTimeGoalType
     if (!type) return
     const name = TIME_GOAL_NAMES[type] || '该时间'
-    if (!confirm(`将前往计划页更新「${name}」目标，是否继续？`)) return
+    if (!confirm(`将前往计划页更新「${name}」计划，是否继续？`)) return
     window.closeTimeGoalModal()
     router.push('/onboarding/plan-create')
   }
@@ -1264,7 +1601,9 @@ export function initMainHomeView(router) {
   }
 
   window.addAnotherPlan = () => {
-    router.push('/onboarding/plan-create')
+    router.push({ path: '/onboarding/plan-create', query: { another: '1' } }).catch(() => {
+      window.location.hash = '#/onboarding/plan-create?another=1'
+    })
   }
 
   window.deleteHomePlan = async (planId) => {
@@ -1283,7 +1622,7 @@ export function initMainHomeView(router) {
     const type = activeTimeGoalType
     if (!type) return
     const name = TIME_GOAL_NAMES[type] || '该时间'
-    if (!confirm(`确认暂停「${name}」本期目标？暂停后可随时恢复。`)) return
+    if (!confirm(`确认暂停「${name}」计划？暂停后可随时恢复。`)) return
     setTimeGoalStatus(type, 'paused')
   }
 
@@ -1297,7 +1636,7 @@ export function initMainHomeView(router) {
     const type = activeTimeGoalType
     if (!type) return
     const name = TIME_GOAL_NAMES[type] || '该时间'
-    if (!confirm(`确认放弃「${name}」本期目标？放弃后需通过「更新目标」重新设定。`)) return
+    if (!confirm(`确认放弃「${name}」计划？放弃后需通过「更新计划」重新设定。`)) return
     setTimeGoalStatus(type, 'abandoned')
   }
 
@@ -1307,7 +1646,7 @@ export function initMainHomeView(router) {
 
   const DEFAULT_REWARD_PACK = {
     survival: [
-      { icon: '🧩', name: '生存星球能量碎片 ×1', desc: '完成本期目标可获得' },
+      { icon: '🎟️', name: '线下训练营200元抵扣券', desc: '完成本期目标可获得' },
       { icon: '🎓', name: '线上课限时3天体验券', desc: '点亮星球后开启礼包可抽得' },
     ],
     money: [
@@ -1400,25 +1739,54 @@ export function initMainHomeView(router) {
     }
   }
 
-  async function createUserReward({ name, description }) {
-    await api.post('/rewards', { name, description })
+  async function createUserReward({ name, description, status = 'locked' }) {
+    await api.post('/rewards', { name, description, status })
     const { data } = await api.get('/home/dashboard')
     dashboardData = data
-    renderRewards(data.rewards)
+    renderMyRewards(data.rewards, data.badges)
     refreshRewardPackCustomList()
   }
 
-  window.closeRewardPackModal = () => {
+  window.closeRewardPackModal = async () => {
+    const type = activeRewardPackType
+    const planet = dashboardData?.planets?.find((p) => p.planet_type === type)
+    const planDone =
+      Boolean(type) &&
+      (Boolean(dashboardData?.demo_guides?.plan_complete_planets?.includes(type)) ||
+        (planet && Number(planet.level) >= (Number(planet.max_level) || 7)))
     document.getElementById('rewardPackModalOverlay')?.classList.add('hidden')
     activeRewardPackType = null
+    // 领完计划完成礼包：写入「我的奖励」，并重新备好点亮引导
+    if (planDone && type) {
+      const packItems = DEFAULT_REWARD_PACK[type] || DEFAULT_REWARD_PACK.survival || []
+      for (const item of packItems) {
+        await grantObtainedReward({
+          name: item.name,
+          description: `${item.desc || '完成本期目标可获得'} · 计划完成礼包`,
+        })
+      }
+      try {
+        await api.post('/dev/prep-light-test', null, { params: { planet_type: type } })
+      } catch {
+        /* 非开发环境无该接口时忽略 */
+      }
+      await loadDashboard()
+      showToast('奖励已放入「我的奖励」', { duration: 2200 })
+    }
   }
 
   window.viewRewardPack = (type) => {
     activeRewardPackType = type
     const titleEl = document.getElementById('rewardPackModalTitle')
     const defaultList = document.getElementById('rewardPackDefaultList')
+    const planet = dashboardData?.planets?.find((p) => p.planet_type === type)
+    const planDone =
+      Boolean(dashboardData?.demo_guides?.plan_complete_planets?.includes(type)) ||
+      (planet && Number(planet.level) >= (Number(planet.max_level) || 7))
 
-    if (titleEl) titleEl.textContent = '完成即可得奖励礼包'
+    if (titleEl) {
+      titleEl.textContent = planDone ? '计划已达成，领取奖励礼包' : '完成即可得奖励礼包'
+    }
     if (defaultList) {
       defaultList.innerHTML = renderRewardPackItems(
         DEFAULT_REWARD_PACK[type] || DEFAULT_REWARD_PACK.survival,
@@ -1720,7 +2088,7 @@ export function initMainHomeView(router) {
       if (planet.ready_to_light) {
         // 满碎片时引导点旁侧「点亮」按钮
         alert(
-          `${names[type]}\n\n能量碎片已集齐 7/7\n请点击星球下方的「点亮」按钮升一级`
+          `${names[type]}\n\n能量碎片已集齐 7/7\n请点击星球正中心的「点亮」按钮升一级`
         )
         return
       }
@@ -2022,12 +2390,17 @@ export function initMainHomeView(router) {
     'toggleTaskSocial',
     'likeTaskPost',
     'shareTask',
+    'closeTaskShareChoice',
+    'shareTaskToWechat',
+    'shareTaskToCommunity',
     'closeInviteModal',
+    'closeWechatShareGuide',
+    'shareInviteToWechat',
+    'copyInviteLink',
     'copyInviteText',
     'acceptInviteCode',
     'closeDailySummary',
     'lightPlanetNow',
-    'closePandoraLater',
     'openPandoraNow',
     'closePandoraReward',
     'openReflectionInput',
@@ -2052,6 +2425,9 @@ export function initMainHomeView(router) {
     'viewTimeGoal',
     'closeTimeGoalModal',
     'updateTimeGoal',
+    'switchHomePlan',
+    'addAnotherPlan',
+    'deleteHomePlan',
     'pauseTimeGoal',
     'resumeTimeGoal',
     'abandonTimeGoal',
@@ -2065,6 +2441,18 @@ export function initMainHomeView(router) {
     'confirmAvatarDress',
     'resetAvatarDressDraft',
     'setAvatarDressField',
+    'openAiMemberZoneInfo',
+    'closeAiMemberZoneInfo',
+    'resetAiZonePanel',
+    'triggerAiExperience',
+    'openAiChurnWakeModal',
+    'closeAiChurnWakeModal',
+    'confirmAiChurnSwitchEasy',
+    'openAiEasyModePage',
+    'closeAiEasyModePage',
+    'openAiAdvancedModePage',
+    'closeAiAdvancedModePage',
+    'notifyAiModeDemoOnly',
     'openDailyCompletionCurve',
     'closeDailyCompletionCurve',
     'openTodayGrowthQuote',
@@ -2101,6 +2489,7 @@ export function initMainHomeView(router) {
     dashboardData = null
     focusedTaskId = null
     inviteShareText = ''
+    inviteShareUrl = ''
     dailySummaryShownToday = false
     pendingCompleteTaskId = null
     pendingLightPlanetType = null

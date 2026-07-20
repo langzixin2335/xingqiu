@@ -57,8 +57,8 @@ def post_reflection(
         author_name=current_user.nickname,
         avatar=current_user.avatar or "👩",
         content=payload.content,
-        task_title="今日成长感悟",
-        time_type="flow",
+        task_title=payload.task_title or "今日成长感悟",
+        time_type=payload.time_type or "flow",
         likes_count=0,
         comments_count=0,
     )

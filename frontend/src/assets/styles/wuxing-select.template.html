@@ -6,7 +6,7 @@
         <header class="header">
             <div class="logo">✦ SHINING PLANET ✦</div>
             <h1 class="title">选择你的<span>五行人格</span></h1>
-            <p class="subtitle">根据你的职业与性格特质<br>找到属于你的星际女神化身</p>
+            <p class="subtitle">先看性格特质，职业方向仅作参考<br>找不到完全对上的岗位，选最接近的性格即可</p>
             <div class="divider"></div>
         </header>
 
@@ -21,8 +21,8 @@
                         <span class="element-name wood">木型</span>
                         <span class="element-type wood">生发型</span>
                     </div>
-                    <div class="card-traits">理想、共情、上进、有风骨</div>
-                    <div class="card-careers">适合：教育、写作、公益、文化创意</div>
+                    <div class="card-traits">理想、共情、上进、有风骨、乐于成长</div>
+                    <div class="card-careers">方向：教育培训、内容创作、设计创意、医疗护理…</div>
                 </div>
                 <div class="select-indicator"></div>
             </div>
@@ -37,8 +37,8 @@
                         <span class="element-name fire">火型</span>
                         <span class="element-type fire">传播型</span>
                     </div>
-                    <div class="card-traits">热情、表达、感染力、行动力</div>
-                    <div class="card-careers">适合：HR、销售、主持、市场营销</div>
+                    <div class="card-traits">热情、表达、感染力、行动力、外向</div>
+                    <div class="card-careers">方向：销售商务、市场品牌、传媒主持、直播运营…</div>
                 </div>
                 <div class="select-indicator"></div>
             </div>
@@ -53,8 +53,8 @@
                         <span class="element-name earth">土型</span>
                         <span class="element-type earth">承载型</span>
                     </div>
-                    <div class="card-traits">稳重、守信、包容、责任心</div>
-                    <div class="card-careers">适合：公务员、行政、会计、后勤</div>
+                    <div class="card-traits">稳重、守信、包容、责任心、务实</div>
+                    <div class="card-careers">方向：行政运营、财务会计、项目管理、客户服务…</div>
                 </div>
                 <div class="select-indicator"></div>
             </div>
@@ -69,8 +69,8 @@
                         <span class="element-name metal">金型</span>
                         <span class="element-type metal">决断型</span>
                     </div>
-                    <div class="card-traits">理性、正义、果断、重情义</div>
-                    <div class="card-careers">适合：创业、法律、金融、风控</div>
+                    <div class="card-traits">理性、正义、果断、重情义、目标感强</div>
+                    <div class="card-careers">方向：创业管理、法律合规、金融投资、技术研发…</div>
                 </div>
                 <div class="select-indicator"></div>
             </div>
@@ -85,15 +85,15 @@
                         <span class="element-name water">水型</span>
                         <span class="element-type water">洞察型</span>
                     </div>
-                    <div class="card-traits">聪慧、通透、共情、变通</div>
-                    <div class="card-careers">适合：心理咨询、编剧、咨询、猎头</div>
+                    <div class="card-traits">聪慧、通透、变通、善观察、策略思维</div>
+                    <div class="card-careers">方向：咨询顾问、产品策略、数据分析、自由职业…</div>
                 </div>
                 <div class="select-indicator"></div>
             </div>
         </div>
 
         <div class="bottom-section">
-            <p class="hint-text">点击卡片查看详情，选择与你最契合的人格</p>
+            <p class="hint-text">点击卡片查看详情；先看性格，职业仅作参考</p>
             <button class="confirm-btn" id="confirmBtn" onclick="confirmSelection()">确认选择</button>
         </div>
     </div>
@@ -114,22 +114,21 @@
             </div>
         </div>
         <div class="detail-section">
-            <div class="detail-section-title">核心特质</div>
-            <p class="detail-text" id="detailTraits">理想、共情、上进、有风骨</p>
+            <div class="detail-section-title">性格特质</div>
+            <p class="detail-text" id="detailTraits">理想、共情、上进、有风骨、乐于成长、愿意创造与帮助他人</p>
         </div>
         <div class="detail-section">
-            <div class="detail-section-title">适合职业</div>
+            <div class="detail-section-title">职业方向<span class="detail-section-note">（参考，非限定）</span></div>
             <div class="detail-tags" id="detailCareers">
-                <span class="detail-tag">教育</span>
-                <span class="detail-tag">写作</span>
-                <span class="detail-tag">公益</span>
-                <span class="detail-tag">文化创意</span>
+                <span class="detail-tag">教育培训</span>
+                <span class="detail-tag">内容创作</span>
+                <span class="detail-tag">公益文化</span>
+                <span class="detail-tag">设计创意</span>
+                <span class="detail-tag">医疗护理</span>
+                <span class="detail-tag">心理相关</span>
             </div>
         </div>
-        <div class="detail-section">
-            <div class="detail-section-title">成长建议</div>
-            <p class="detail-text" id="detailAdvice">发挥你的共情力与创造力，在帮助他人的过程中实现自我价值。注意平衡理想与现实，让梦想落地生根。</p>
-        </div>
+        <p class="detail-pick-hint">岗位对不上也没关系，按最接近的性格特质选即可</p>
         <button class="detail-btn" onclick="confirmFromDetail()">选择这个人格</button>
     </div>
 

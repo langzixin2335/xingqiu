@@ -41,7 +41,8 @@ const routes = [
     path: '/onboarding/plan-create',
     name: 'PlanCreate',
     component: () => import('../views/PlanCreateView.vue'),
-    meta: { requiresAuth: true, onboarding: true },
+    // allowAfterDone：首页「再订一条计划」可再次进入
+    meta: { requiresAuth: true, onboarding: true, allowAfterDone: true },
   },
   {
     path: '/home',
@@ -115,7 +116,8 @@ router.beforeEach(async (to, _from, next) => {
 
   if (to.meta.requiresAuth && userStore.isLoggedIn && to.meta.onboarding) {
     const step = userStore.onboardingStep
-    if (step === 'done') return next('/home')
+    // 引导已完成时默认回首页；制定计划页允许再次进入（再订一条）
+    if (step === 'done' && !to.meta.allowAfterDone) return next('/home')
   }
 
   if (to.path === '/home' && userStore.isLoggedIn && userStore.onboardingStep !== 'done') {

@@ -276,6 +276,8 @@ class InvitationOut(BaseModel):
 
 class ReflectionRequest(BaseModel):
     content: str = Field(min_length=1, max_length=500)
+    task_title: str = Field(default="今日成长感悟", max_length=100)
+    time_type: str = Field(default="flow", pattern=r"^(survival|money|beauty|fun|flow)$")
 
 
 class WeekendReviewOut(BaseModel):
@@ -284,8 +286,8 @@ class WeekendReviewOut(BaseModel):
     message: str
     period: str = "previous"  # previous | current
     week_label: str = ""
-    title: str = "上周总结"
-    button_label: str = "查看上周总结"
+    title: str = "上周行动回顾"
+    button_label: str = "查看上周行动回顾"
     current_week_locked: bool = True
 
 
@@ -360,6 +362,7 @@ class RewardOut(BaseModel):
 class RewardCreateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     description: str = ""
+    status: str = Field(default="locked", pattern=r"^(locked|unlocked)$")
 
 
 class CommentCreateRequest(BaseModel):
@@ -404,6 +407,13 @@ class PlanSummaryOut(BaseModel):
         from_attributes = True
 
 
+class DemoGuidesOut(BaseModel):
+    """引导信息：满级星球可在成长奖励领取计划完成礼包。"""
+
+    growth_reward_pack: bool = False
+    plan_complete_planets: list[str] = Field(default_factory=list)
+
+
 class DashboardOut(BaseModel):
     user: UserOut
     planets: list[PlanetOut]
@@ -422,4 +432,5 @@ class DashboardOut(BaseModel):
     streak: StreakOut = StreakOut()
     weekend_review: Optional[WeekendReviewOut] = None
     core_goal: Optional[str] = None
+    demo_guides: DemoGuidesOut = Field(default_factory=DemoGuidesOut)
 

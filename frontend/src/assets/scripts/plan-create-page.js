@@ -77,9 +77,8 @@ const rewardSeenGoalIndexes = new Set()
 let encourageMode = 'single'
 let encouragePoolPhrases = []
 let encourageAiPhrases = []
-let activeEncouragePlanet = 'survival'
-/** 各星球未点保存时的编辑草稿 */
-const encourageDraftsByPlanet = {}
+/** 后端提醒仍需 time_type；前端不再按星球区分，统一用此值 */
+const ENCOURAGE_TIME_TYPE = 'survival'
 const DAY_NAME_BY_NUM = {
   1: '周一',
   2: '周二',
@@ -382,23 +381,12 @@ function initEncourageTimeWheel() {
   requestAnimationFrame(() => setEncourageTimeWheel(initial))
 }
 
-function syncEncouragePlanetButtons() {
-  const configured = new Set(pendingReminders.map((r) => r.time_type))
-  document.querySelectorAll('#encouragePlanetOptions .time-type-tag').forEach((el) => {
-    const type = el.dataset.type
-    const selected = type === activeEncouragePlanet
-    const hasConfig = configured.has(type)
-    el.classList.toggle('selected', selected)
-    el.classList.toggle('has-goal', hasConfig)
-    el.classList.toggle('is-lit', hasConfig || selected)
-  })
+function syncEncourageSaveButton() {
   const addBtn = document.getElementById('addEncourageBtn')
-  if (addBtn) {
-    const name = TIME_LABELS[activeEncouragePlanet] || '这颗星球'
-    addBtn.textContent = configured.has(activeEncouragePlanet)
-      ? `✓ 更新「${name}」的鼓励`
-      : `+ 保存「${name}」的鼓励`
-  }
+  if (!addBtn) return
+  addBtn.textContent = pendingReminders.length
+    ? '✓ 更新每日鼓励'
+    : '+ 保存每日鼓励'
 }
 
 function readEncourageFormDraft() {
@@ -489,7 +477,7 @@ function renderReminderList() {
   if (!box) return
   if (pendingReminders.length === 0) {
     box.innerHTML = ''
-    syncEncouragePlanetButtons()
+    syncEncourageSaveButton()
     return
   }
   box.innerHTML = pendingReminders
@@ -502,8 +490,7 @@ function renderReminderList() {
             : '潇洒姐语音'
           : '文字'
       const randomHint = decoded.mode === 'single' ? '' : ' · 每天随机一句'
-      const planetLabel = TIME_LABELS[r.time_type] || r.time_type
-      const subtitle = `${planetLabel} · ${r.remind_time} · ${deliverLabel}${randomHint}`
+      const subtitle = `${r.remind_time} · ${deliverLabel}${randomHint}`
       const preview =
         decoded.mode === 'single'
           ? ''
@@ -511,10 +498,10 @@ function renderReminderList() {
             ? `<div class="goal-period encourage-preview">例如：${escapeHtml(decoded.preview)}</div>`
             : ''
       return `
-    <div class="goal-item" onclick="selectEncouragePlanet('${r.time_type}')">
+    <div class="goal-item">
       <div class="goal-icon" style="background: rgba(212, 185, 106, 0.2);">${decoded.mode === 'ai' ? '✨' : '💓'}</div>
       <div class="goal-content">
-        <div class="goal-title">${escapeHtml(planetLabel)} · ${escapeHtml(decoded.display)}</div>
+        <div class="goal-title">${escapeHtml(decoded.display)}</div>
         <div class="goal-period">${subtitle}</div>
         ${preview}
       </div>
@@ -522,7 +509,7 @@ function renderReminderList() {
     </div>`
     })
     .join('')
-  syncEncouragePlanetButtons()
+  syncEncourageSaveButton()
 }
 
 function phaseToPeriod(index) {
@@ -673,9 +660,6 @@ function applyAiBundle(data, fallbackGoal = '') {
   renderAiPreview(aiPhases)
   renderDailyTasksPreview()
   syncEncourageAreaVisibility()
-  if (typeof window.selectEncouragePlanet === 'function') {
-    window.selectEncouragePlanet(primary)
-  }
   const area = document.getElementById('encourageArea')
   if (area && goalStatus === 'no-plan') {
     setTimeout(() => {
@@ -794,16 +778,19 @@ export function initPlanCreateView(router) {
     { time_type: 'survival', period: 'short', title: '每天运动30分钟，保持规律作息' },
   ]
   pendingReminders = []
+  pendingDailyTasks = []
+  aiPhases = []
+  goalUnderstanding = null
+  previewEditMode = false
   encourageMode = 'single'
   encouragePoolPhrases = []
   encourageAiPhrases = []
-  activeEncouragePlanet = 'survival'
 
   try {
     renderGoalList()
     showPersonalityTag()
     syncEncourageModeUi()
-    syncEncouragePlanetButtons()
+    syncEncourageSaveButton()
     initEncourageTimeWheel()
   } catch (err) {
     console.warn('plan-create render failed', err)
@@ -1100,7 +1087,7 @@ export function initPlanCreateView(router) {
 
   const DEFAULT_REWARD_PACK = {
     survival: [
-      { icon: '🧩', name: '生存星球能量碎片 ×1', desc: '完成本期目标可获得' },
+      { icon: '🎟️', name: '线下训练营200元抵扣券', desc: '完成本期目标可获得' },
       { icon: '🎓', name: '线上课限时3天体验券', desc: '点亮星球后开启礼包可抽得' },
     ],
     money: [
@@ -1476,26 +1463,6 @@ export function initPlanCreateView(router) {
     }
   }
 
-  window.selectEncouragePlanet = (type) => {
-    if (!['survival', 'money', 'beauty', 'fun', 'flow'].includes(type)) return
-    if (type === activeEncouragePlanet) {
-      syncEncouragePlanetButtons()
-      return
-    }
-    stopEncourageSpeechRecognition()
-    encourageDraftsByPlanet[activeEncouragePlanet] = readEncourageFormDraft()
-    activeEncouragePlanet = type
-    const draft =
-      encourageDraftsByPlanet[type] ||
-      (() => {
-        const existing = pendingReminders.find((r) => r.time_type === type)
-        return existing ? reminderToEncourageDraft(existing) : defaultEncourageDraft()
-      })()
-    applyEncourageFormDraft(draft)
-    syncEncouragePlanetButtons()
-    showToast(`正在配置「${TIME_LABELS[type]}」`)
-  }
-
   window.setEncourageMode = (mode) => {
     if (!['single', 'pool', 'ai'].includes(mode)) return
     stopEncourageSpeechRecognition()
@@ -1536,7 +1503,6 @@ export function initPlanCreateView(router) {
 
   window.generateEncourageByAi = async () => {
     const btn = document.querySelector('#encourageAiBtn')
-    const planet = activeEncouragePlanet || 'survival'
     const prev = btn?.textContent || '✨ 帮我生成'
     if (btn) {
       btn.disabled = true
@@ -1544,7 +1510,7 @@ export function initPlanCreateView(router) {
     }
     try {
       const { data } = await api.post('/reminders/encourage-phrases', {
-        time_type: planet,
+        time_type: ENCOURAGE_TIME_TYPE,
         count: 5,
       })
       const phrases = (data?.phrases || []).map((p) => String(p).trim()).filter(Boolean)
@@ -1584,7 +1550,7 @@ export function initPlanCreateView(router) {
       mode: encourageMode,
       poolPhrases: encouragePoolPhrases,
       aiPhrases: encourageAiPhrases,
-      timeType: activeEncouragePlanet,
+      timeType: ENCOURAGE_TIME_TYPE,
     })
     if (!reminder) {
       showToast(
@@ -1594,25 +1560,18 @@ export function initPlanCreateView(router) {
       )
       return
     }
-    const idx = pendingReminders.findIndex((r) => r.time_type === activeEncouragePlanet)
-    if (idx >= 0) pendingReminders[idx] = reminder
-    else pendingReminders.push(reminder)
-    encourageDraftsByPlanet[activeEncouragePlanet] = reminderToEncourageDraft(reminder)
+    // 不区分星球：只保留一条每日鼓励，到设定时间发送
+    pendingReminders = [reminder]
     renderReminderList()
-    syncEncouragePlanetButtons()
-    const name = TIME_LABELS[activeEncouragePlanet] || '这颗星球'
-    showToast(`「${name}」的鼓励已保存，可继续配置其他星球`)
+    syncEncourageSaveButton()
+    showToast('每日鼓励已保存，将在设定时间送达')
   }
 
   window.deleteReminder = (index) => {
-    const removed = pendingReminders[index]
     pendingReminders.splice(index, 1)
-    if (removed?.time_type) delete encourageDraftsByPlanet[removed.time_type]
     renderReminderList()
-    if (removed?.time_type === activeEncouragePlanet) {
-      applyEncourageFormDraft(defaultEncourageDraft())
-    }
-    syncEncouragePlanetButtons()
+    applyEncourageFormDraft(defaultEncourageDraft())
+    syncEncourageSaveButton()
   }
 
   window.toggleSwitch = (el) => {
@@ -1800,7 +1759,7 @@ export function initPlanCreateView(router) {
     })
 
     try {
-      const { data: saved } = await api.post(
+      await api.post(
         '/plans',
         {
           goal_status: goalStatus === 'no-plan' ? 'no-plan' : 'has-plan',
@@ -1816,21 +1775,9 @@ export function initPlanCreateView(router) {
       // 勿阻塞跳转：通知权限弹窗在部分机型会卡住
       scheduleRemindersFromApi().catch(() => {})
       confirmingPlan = false
-      confirmBtns.forEach((btn) => {
-        btn.disabled = false
-        btn.textContent = btn.dataset.prevText || '确认计划'
-      })
-      const count = saved?.plan_count || 1
-      const desc = document.getElementById('planSavedDesc')
-      if (desc) {
-        desc.textContent =
-          count > 1
-            ? `你已有 ${count} 条计划，都还在。点「回家园查看」可在「我的计划」里切换；也可继续再订一条。`
-            : '计划已安放。点「回家园查看」看成长地图；或继续再订一条。'
-      }
-      await refreshSavedPlansCard()
-      document.getElementById('planSavedOverlay')?.classList.remove('hidden')
-      showToast('计划已保存')
+      // 保存成功后直接进首页，不再弹「计划已安放」
+      showToast('计划已保存，正在进入星球')
+      await router.replace('/home')
     } catch (e) {
       confirmingPlan = false
       showToast(formatApiError(e, '保存计划失败，请检查网络后重试'))
@@ -1843,7 +1790,6 @@ export function initPlanCreateView(router) {
 
   window.goHomeAfterPlan = async () => {
     document.getElementById('planSavedOverlay')?.classList.add('hidden')
-    showToast('回家园后，在「我的计划」里切换查看')
     await router.replace('/home')
   }
 
@@ -1859,7 +1805,6 @@ export function initPlanCreateView(router) {
     encourageMode = 'single'
     encouragePoolPhrases = []
     encourageAiPhrases = []
-    Object.keys(encourageDraftsByPlanet).forEach((k) => delete encourageDraftsByPlanet[k])
 
     document.querySelectorAll('#has-plan-area textarea.input-field, #no-plan-area textarea.input-field').forEach((el) => {
       el.value = ''
@@ -1897,7 +1842,6 @@ export function initPlanCreateView(router) {
     'setEncourageVoicePersona',
     'toggleEncourageTimePicker',
     'closeEncourageTimePicker',
-    'selectEncouragePlanet',
     'setEncourageInputMode',
     'addEncouragePhrase',
     'removeEncouragePhrase',
@@ -1929,8 +1873,6 @@ export function initPlanCreateView(router) {
     encouragePoolPhrases = []
     encourageAiPhrases = []
     encourageInputMode = 'voice'
-    activeEncouragePlanet = 'survival'
-    Object.keys(encourageDraftsByPlanet).forEach((k) => delete encourageDraftsByPlanet[k])
     stopEncourageSpeechRecognition()
     stopGoalSpeechRecognition()
     handlers.forEach((name) => delete window[name])

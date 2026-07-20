@@ -19,6 +19,7 @@ from ..models import (
 from ..schemas import (
     BadgeOut,
     DashboardOut,
+    DemoGuidesOut,
     PlanetOut,
     PlanPhaseOut,
     PlanSummaryOut,
@@ -30,7 +31,11 @@ from ..schemas import (
 )
 from ..serializers import post_to_out, task_to_out
 from ..services.planet_service import ensure_all_planets, light_planet, planet_to_out
-from ..seed import ensure_user_home_data
+from ..seed import (
+    ensure_demo_growth_reward_guide,
+    ensure_demo_reward_guide,
+    ensure_user_home_data,
+)
 from ..services.gamification_service import (
     compute_dimension_progress,
     compute_overall_completion_rate,
@@ -43,13 +48,32 @@ from ..services.task_rollover_service import ensure_today_tasks, today_str
 router = APIRouter(prefix="/home", tags=["home"])
 
 
-def _phase_progress(db: Session, user_id: int, phase_index: int, total_phases: int) -> int:
-    tasks = db.query(DailyTask).filter(DailyTask.user_id == user_id).all()
-    if not tasks:
-        return max(10, (phase_index + 1) * (100 // max(total_phases, 1)))
-    completed = sum(1 for t in tasks if t.completed)
-    base = round(completed / len(tasks) * 100)
-    return min(100, base + phase_index * 5)
+def _phase_progress(
+    db: Session,
+    user_id: int,
+    phase_index: int,
+    total_phases: int,
+    time_type: str | None = None,
+) -> int:
+    """阶段进度跟对应星球点亮进度对齐，避免「今日全勾完」直接显示 100%。"""
+    from ..services.planet_service import compute_progress_percent, ensure_all_planets
+
+    planets = {p.planet_type: p for p in ensure_all_planets(db, user_id)}
+    if time_type and time_type in planets:
+        p = planets[time_type]
+        return compute_progress_percent(int(p.level or 0), int(p.energy_fragments or 0))
+
+    # 无 time_type 时：用五星球均值，并按阶段序号略作错落
+    if planets:
+        avg = round(
+            sum(
+                compute_progress_percent(int(p.level or 0), int(p.energy_fragments or 0))
+                for p in planets.values()
+            )
+            / max(len(planets), 1)
+        )
+        return min(100, max(0, avg))
+    return max(0, (phase_index + 1) * (100 // max(total_phases, 1)))
 
 
 @router.get("/dashboard", response_model=DashboardOut)
@@ -59,6 +83,10 @@ def get_dashboard(
 ):
     ensure_user_home_data(db, current_user)
     ensure_today_tasks(db, current_user.id)
+    # 固定引导：今日只剩 1 条待完成 + 生存星球 6/7，方便人人测碎片/点亮潘多拉
+    ensure_demo_reward_guide(db, current_user)
+    # 成长奖励固定引导：保证有已解锁礼包可点
+    ensure_demo_growth_reward_guide(db, current_user)
 
     today = today_str()
     all_tasks = (
@@ -118,7 +146,11 @@ def get_dashboard(
                     time_type=goal.time_type,
                     period=goal.period,
                     progress_percent=_phase_progress(
-                        db, current_user.id, idx, len(goals)
+                        db,
+                        current_user.id,
+                        idx,
+                        len(goals),
+                        time_type=goal.time_type,
                     ),
                 )
             )
@@ -152,9 +184,18 @@ def get_dashboard(
     weekend = get_weekend_review(db, current_user.id)
     weekend_out = WeekendReviewOut(**weekend) if weekend else None
 
-    # 目标总进度 / 各维度进度：均基于五种星球点亮完成率
+    # 目标总进度 / 各维度进度：基于真实点亮等级；满级星球 → 成长奖励 100% + 礼包高亮
+    from ..services.planet_service import PLANET_MAX_LEVEL
+
     dimension_progress = compute_dimension_progress(db, current_user.id)
     completion_rate = compute_overall_completion_rate(db, current_user.id)
+    plan_complete_planets = [
+        p.planet_type for p in planets if int(p.level or 0) >= PLANET_MAX_LEVEL
+    ]
+    demo_guides = DemoGuidesOut(
+        growth_reward_pack=False,
+        plan_complete_planets=plan_complete_planets,
+    )
 
     return DashboardOut(
         user=UserOut.model_validate(current_user),
@@ -186,6 +227,7 @@ def get_dashboard(
         streak=streak,
         weekend_review=weekend_out,
         core_goal=plan.core_goal if plan else None,
+        demo_guides=demo_guides,
     )
 
 

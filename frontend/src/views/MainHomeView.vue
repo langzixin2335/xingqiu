@@ -28,55 +28,39 @@
                 <div class="card">
                     <div class="card-title" id="todayActionsTitle">
                         <span class="icon">📋</span>
-                        今日行动
-                        <div class="today-actions-tools">
-                            <button type="button" class="daily-quote-btn" id="dailyQuoteBtn" onclick="openTodayGrowthQuote()" title="查收今日成长语录">
-                                <span class="daily-quote-icon" aria-hidden="true">💌</span>
-                                查收今日成长语录
-                                <span class="daily-quote-dot hidden" id="dailyQuoteDot" aria-hidden="true"></span>
-                            </button>
-                            <button type="button" class="daily-curve-btn" onclick="openDailyCompletionCurve()" title="查看每日行动完成曲线">每日完成曲线</button>
-                        </div>
+                        <span class="today-actions-heading">今日行动</span>
+                        <button type="button" class="daily-quote-btn" id="dailyQuoteBtn" onclick="openTodayGrowthQuote()" title="查收爱的鼓励">
+                            <span class="daily-quote-icon" aria-hidden="true">💌</span>
+                            查收爱的鼓励
+                            <span class="daily-quote-dot hidden" id="dailyQuoteDot" aria-hidden="true"></span>
+                        </button>
                     </div>
-                    <div class="card-desc">完成所有行动，获得星球能量碎片</div>
+                    <div class="card-desc" id="todayActionsDesc">完成所有行动，获得星球能量碎片</div>
                     
                     <div class="today-tasks" id="todayTasks">
-                        <div class="task-item" data-task="1" data-time-type="survival">
+                        <div class="task-item task-pending" data-task="1" data-time-type="survival">
                             <div class="task-type-tag survival">生存行动</div>
                             <div class="task-content">
                                 <div class="task-title">晨跑5公里</div>
                                 <div class="task-meta">07:00 · 待完成</div>
                             </div>
                             <div class="task-actions">
-                                <button class="task-action-btn invite" onclick="shareTask(this)" title="发起邀约">发起邀约</button>
+                                <button class="task-action-btn invite" onclick="shareTask(this)" title="邀约伙伴">邀约伙伴</button>
                                 <button class="task-action-btn confirm" onclick="confirmTaskComplete(this)" title="确认完成">确认完成</button>
                             </div>
                         </div>
                     </div>
                 </div>
     
-                <!-- 我的计划（阶段时间轴） -->
-                <div class="card" id="myPlanCard">
-                    <div class="card-title">
-                        <span class="icon">🗺️</span>
-                        我的计划
-                        <span id="streakBadge" class="streak-badge" style="margin-left: auto; font-size: 12px;"></span>
-                    </div>
-                    <div class="card-desc" id="planCoreGoalDesc">查看你的长期成长路径与当前阶段</div>
-                    <div class="plan-switcher" id="planSwitcher"></div>
-                    <div class="plan-phase-timeline" id="planPhaseTimeline"></div>
-                    <button type="button" class="btn btn-secondary plan-add-btn" id="btnAddAnotherPlan" onclick="addAnotherPlan()">＋ 再订一条计划</button>
-                </div>
-
-                <!-- 周复盘：工作日看上周，周六日解锁本周 -->
+                <!-- 周行动回顾：平日看上周，周日解锁本周 -->
                 <div class="card weekend-review-card hidden" id="weekendReviewCard">
                     <div class="card-title">
                         <span class="icon">📝</span>
-                        <span id="weekendReviewTitle">周复盘</span>
-                        <span class="weekend-review-lock-tag hidden" id="weekendReviewLockTag">本周待解锁</span>
+                        <span id="weekendReviewTitle">周行动回顾</span>
+                        <span class="weekend-review-lock-tag hidden" id="weekendReviewLockTag">周日解锁</span>
                     </div>
                     <div class="weekend-review-text" id="weekendReviewText"></div>
-                    <button class="btn btn-secondary weekend-review-btn" id="weekendReviewBtn" onclick="openWeekendReview()">查看上周总结</button>
+                    <button class="btn btn-secondary weekend-review-btn" id="weekendReviewBtn" onclick="openWeekendReview()">查看上周行动回顾</button>
                 </div>
     
                 <!-- 星球社区 -->
@@ -330,7 +314,7 @@
                         <span class="icon">⚔️</span>
                         成长赛季BOSS战
                     </div>
-                    <div class="card-desc">完成任意3个星球（含）计划，即可解锁线下活动报名参与权益</div>
+                    <div class="card-desc">任意 3 个星球点亮进度达到 100%，即可解锁线下活动报名参与权益</div>
                     <div class="growth-boss-list" id="growthBossList">
                         <div class="growth-boss-item" data-quarter="Q1">
                             <div class="growth-boss-quarter">Q1</div>
@@ -372,6 +356,7 @@
                     <div class="card-title">
                         <span class="icon">🌌</span>
                         成长总览
+                        <button type="button" class="daily-curve-btn ai-zone-info-btn growth-overview-ai-btn" onclick="openAiMemberZoneInfo()" title="AI体验专区">AI体验专区</button>
                     </div>
                     <div class="growth-report-gate" id="growthReportGate">
                         <div class="growth-report-gate-title">月度个人成长报告</div>
@@ -383,51 +368,14 @@
                     <section class="growth-template-report hidden" id="growthTemplateReport" aria-label="月度个人成长报告"></section>
                 </div>
     
-                <!-- 勋章墙 -->
+                <!-- 我的奖励：已获得的勋章 / 礼包 / 悦己奖励 -->
                 <div class="card">
                     <div class="card-title">
-                        <span class="icon">🎖️</span>
-                        勋章墙
+                        <span class="icon">🎁</span>
+                        我的奖励
                     </div>
-                    <div class="card-desc">解锁成就，记录你的每一个里程碑。点击已解锁勋章可设置展示在头像旁（最多2个）</div>
-    
-                    <div class="badge-grid" id="badgeGrid">
-                        <div class="badge-item unlocked" onclick="toggleBadgeDisplay(this, '🔥', '连续7天')">
-                            <div class="badge-icon">🔥</div>
-                            <div class="badge-name">连续7天</div>
-                            <div class="badge-display-indicator" style="display: none;">👤</div>
-                        </div>
-                        <div class="badge-item unlocked" onclick="toggleBadgeDisplay(this, '⭐', '早起达人')">
-                            <div class="badge-icon">⭐</div>
-                            <div class="badge-name">早起达人</div>
-                            <div class="badge-display-indicator" style="display: none;">👤</div>
-                        </div>
-                        <div class="badge-item unlocked" onclick="toggleBadgeDisplay(this, '📚', '阅读之星')">
-                            <div class="badge-icon">📚</div>
-                            <div class="badge-name">阅读之星</div>
-                            <div class="badge-display-indicator" style="display: none;">👤</div>
-                        </div>
-                        <div class="badge-item locked">
-                            <div class="badge-icon">🏃</div>
-                            <div class="badge-name">运动健将</div>
-                        </div>
-                        <div class="badge-item locked">
-                            <div class="badge-icon">🎯</div>
-                            <div class="badge-name">目标达成</div>
-                        </div>
-                        <div class="badge-item locked">
-                            <div class="badge-icon">👑</div>
-                            <div class="badge-name">星球女王</div>
-                        </div>
-                        <div class="badge-item locked">
-                            <div class="badge-icon">💎</div>
-                            <div class="badge-name">智慧宝石</div>
-                        </div>
-                        <div class="badge-item locked">
-                            <div class="badge-icon">🌟</div>
-                            <div class="badge-name">闪耀之星</div>
-                        </div>
-                    </div>
+                    <div class="card-desc">点亮星球、潘多拉魔盒与计划礼包中获得的奖励，都会收纳在这里</div>
+                    <div class="my-rewards-list" id="myRewardsList"></div>
                 </div>
             </div>
     
@@ -666,8 +614,6 @@
                                 </div>
                             </div>
                         </div>
-                        <button class="upgrade-btn primary" onclick="upgradeTier('星球女王')">补差价升级 ¥600/季度</button>
-                        <div class="upgrade-price">当前星耀会员剩余有效期可抵扣</div>
                     </div>
                 </div>
     
@@ -758,10 +704,10 @@
                     <div class="pandora-glow"></div>
                 </div>
                 <div class="pandora-title">恭喜点亮<span id="pandoraPlanetName">生存星球</span></div>
-                <div class="pandora-desc">获得潘多拉魔盒一个<br>请问现在打开么？</div>
+                <p class="pandora-upgrade" id="pandoraUpgradeText">恭喜升级至 Lv.1</p>
+                <div class="pandora-desc" id="pandoraDescText">星球亮度提升一级，获得潘多拉魔盒一个<br>打开即可领取奖励</div>
                 <div class="pandora-actions">
-                    <button class="btn btn-primary" onclick="openPandoraNow()">现在打开</button>
-                    <button class="btn btn-secondary" onclick="closePandoraLater()">稍后打开</button>
+                    <button type="button" class="btn btn-primary pandora-claim-btn" onclick="openPandoraNow()">领取奖励</button>
                 </div>
             </div>
         </div>
@@ -774,19 +720,19 @@
                 <div class="gift-card-title">恭喜你获得</div>
                 <div class="gift-card-reward" id="pandoraRewardText">线上课限时3天体验券</div>
                 <div class="pandora-reward-hint">奖励已放入你的成长礼包</div>
-                <button class="btn btn-primary gift-claim-btn" onclick="closePandoraReward()">收获奖励</button>
+                <button type="button" class="btn btn-primary gift-claim-btn pandora-claim-btn" onclick="closePandoraReward()">领取奖励</button>
             </div>
         </div>
 
-        <!-- 周末复盘：本周总结（成长报告模版） -->
+        <!-- 周行动回顾（成长报告模版） -->
         <div class="invite-modal-overlay hidden" id="weekendSummaryOverlay" onclick="if(event.target===this)closeWeekendReview()">
             <div class="invite-modal-card weekend-summary-modal-card">
                 <div class="weekend-summary-modal-top">
-                    <div class="invite-modal-title" id="weekendSummaryModalTitle">上周总结</div>
+                    <div class="invite-modal-title" id="weekendSummaryModalTitle">上周行动回顾</div>
                     <button type="button" class="weekend-summary-close" onclick="closeWeekendReview()" aria-label="关闭">×</button>
                 </div>
                 <div class="weekend-summary-scroll">
-                    <section class="growth-report" id="weekendGrowthReport" aria-label="周复盘个人成长分析报告"></section>
+                    <section class="growth-report" id="weekendGrowthReport" aria-label="周行动回顾分析报告"></section>
                 </div>
                 <div class="daily-summary-actions" style="margin-top: 12px;">
                     <button type="button" class="btn btn-secondary" onclick="closeWeekendReview()">关闭</button>
@@ -794,10 +740,10 @@
             </div>
         </div>
 
-        <!-- 查收今日成长语录 -->
+        <!-- 查收爱的鼓励 -->
         <div class="invite-modal-overlay hidden" id="dailyQuoteOverlay" onclick="if(event.target===this)closeTodayGrowthQuote()">
             <div class="invite-modal-card daily-quote-modal-card" onclick="event.stopPropagation()">
-                <div class="invite-modal-title">今日成长语录</div>
+                <div class="invite-modal-title">爱的鼓励</div>
                 <div class="card-desc daily-quote-modal-desc">给你的一句温柔提醒，慢慢看就好</div>
                 <div class="daily-quote-body" id="dailyQuoteBody"></div>
                 <div class="daily-summary-actions" style="margin-top: 16px;">
@@ -806,28 +752,142 @@
             </div>
         </div>
 
-        <!-- 每日行动完成曲线（从今日行动入口打开） -->
-        <div class="invite-modal-overlay hidden" id="dailyCurveOverlay" onclick="if(event.target===this)closeDailyCompletionCurve()">
-            <div class="invite-modal-card daily-curve-modal-card">
-                <div class="invite-modal-title">每日行动完成曲线</div>
-                <div class="card-desc" style="margin-bottom: 12px; text-align: center;">近7天行动完成情况</div>
-                <div class="chart-container daily-curve-modal-chart">
-                    <canvas id="completionChartModal" width="320" height="160" aria-label="每日行动完成曲线"></canvas>
+        <!-- 轻松模式今日行动列表（AI体验 Demo） -->
+        <div class="ai-mode-demo-page hidden" id="aiEasyModePage" role="dialog" aria-label="轻松模式今日行动">
+            <div class="ai-mode-demo-inner">
+                <header class="ai-mode-demo-header">
+                    <button type="button" class="ai-mode-demo-back" onclick="closeAiEasyModePage()" aria-label="返回">← 返回</button>
+                    <div class="ai-mode-demo-badge sticky">AI自适应难度：轻松模式</div>
+                    <div class="ai-mode-demo-title">今日行动</div>
+                    <p class="ai-mode-demo-subtitle">微任务示例 · 降低放弃压力</p>
+                </header>
+                <div class="ai-mode-demo-list today-tasks">
+                    <div class="task-item task-pending ai-mode-demo-task">
+                        <div class="task-type-tag flow">微任务</div>
+                        <div class="task-content">
+                            <div class="task-title">5分钟冥想</div>
+                            <div class="task-meta">约 5 分钟 · 待完成</div>
+                        </div>
+                        <button type="button" class="task-action-btn confirm" onclick="notifyAiModeDemoOnly()">确认完成</button>
+                    </div>
+                    <div class="task-item task-pending ai-mode-demo-task">
+                        <div class="task-type-tag survival">微任务</div>
+                        <div class="task-content">
+                            <div class="task-title">简单拉伸</div>
+                            <div class="task-meta">约 3 分钟 · 待完成</div>
+                        </div>
+                        <button type="button" class="task-action-btn confirm" onclick="notifyAiModeDemoOnly()">确认完成</button>
+                    </div>
+                    <div class="task-item task-pending ai-mode-demo-task">
+                        <div class="task-type-tag fun">微任务</div>
+                        <div class="task-content">
+                            <div class="task-title">日常随笔记录</div>
+                            <div class="task-meta">约 5 分钟 · 待完成</div>
+                        </div>
+                        <button type="button" class="task-action-btn confirm" onclick="notifyAiModeDemoOnly()">确认完成</button>
+                    </div>
                 </div>
-                <div class="daily-curve-weekdays">
-                    <span>周一</span><span>周二</span><span>周三</span><span>周四</span><span>周五</span><span>周六</span><span>周日</span>
+                <p class="ai-mode-demo-note">
+                    触发条件：连续3天行动完成率＜50%，AI自动下调难度，生成微任务，降低放弃压力。<br>
+                    Demo仅展示界面，自动化判定逻辑后期实现。
+                </p>
+            </div>
+        </div>
+
+        <!-- 进阶模式行动列表（AI体验 Demo） -->
+        <div class="ai-mode-demo-page ai-mode-demo-page--advanced hidden" id="aiAdvancedModePage" role="dialog" aria-label="进阶模式行动列表">
+            <div class="ai-mode-demo-inner">
+                <header class="ai-mode-demo-header">
+                    <button type="button" class="ai-mode-demo-back" onclick="closeAiAdvancedModePage()" aria-label="返回">← 返回</button>
+                    <div class="ai-mode-demo-badge ai-mode-demo-badge--advanced sticky">AI自适应难度：进阶模式</div>
+                    <div class="ai-mode-demo-title">今日行动</div>
+                    <p class="ai-mode-demo-subtitle">进阶行动示例 · 循序渐进成长</p>
+                </header>
+                <div class="ai-mode-demo-list today-tasks">
+                    <div class="task-item task-pending ai-mode-demo-task ai-mode-demo-task--advanced">
+                        <div class="task-type-tag flow">进阶行动</div>
+                        <div class="task-content">
+                            <div class="task-title">30分钟深度阅读</div>
+                            <div class="task-meta">约 30 分钟 · 待完成</div>
+                        </div>
+                        <button type="button" class="task-action-btn confirm" onclick="notifyAiModeDemoOnly()">确认完成</button>
+                    </div>
+                    <div class="task-item task-pending ai-mode-demo-task ai-mode-demo-task--advanced">
+                        <div class="task-type-tag money">进阶行动</div>
+                        <div class="task-content">
+                            <div class="task-title">职业技能练习</div>
+                            <div class="task-meta">约 40 分钟 · 待完成</div>
+                        </div>
+                        <button type="button" class="task-action-btn confirm" onclick="notifyAiModeDemoOnly()">确认完成</button>
+                    </div>
+                    <div class="task-item task-pending ai-mode-demo-task ai-mode-demo-task--advanced">
+                        <div class="task-type-tag survival">进阶行动</div>
+                        <div class="task-content">
+                            <div class="task-title">完整形体训练</div>
+                            <div class="task-meta">约 45 分钟 · 待完成</div>
+                        </div>
+                        <button type="button" class="task-action-btn confirm" onclick="notifyAiModeDemoOnly()">确认完成</button>
+                    </div>
                 </div>
-                <div class="daily-summary-actions" style="margin-top: 16px;">
-                    <button type="button" class="btn btn-secondary" onclick="closeDailyCompletionCurve()">关闭</button>
+                <p class="ai-mode-demo-note ai-mode-demo-note--advanced">
+                    触发条件：连续7天稳定完成行动，AI适度提升行动强度，实现循序渐进成长。<br>
+                    Demo仅展示界面，自动化判定逻辑后期实现。
+                </p>
+            </div>
+        </div>
+
+        <!-- AI体验专区（从成长总览入口打开） -->
+        <div class="invite-modal-overlay hidden" id="aiMemberZoneOverlay" onclick="if(event.target===this)closeAiMemberZoneInfo()">
+            <div class="invite-modal-card ai-member-zone-card">
+                <div class="invite-modal-title">AI体验专区</div>
+                <p class="ai-member-zone-lead">说明1：无手动切换入口，正式版由AI全自动调度，用户完全不感知；</p>
+                <p class="ai-member-zone-lead ai-member-zone-lead--2">说明2：模拟触发入口，仅做页面交互和预警弹窗，用户行为判断规则、AI个性化微调模型等后续开发。</p>
+                <div class="ai-zone-actions" id="aiZoneActions">
+                    <button type="button" class="ai-zone-action-btn" onclick="triggerAiExperience('easy')">
+                        <span class="ai-zone-action-scene">每日行动连续断签</span>
+                        <span class="ai-zone-action-arrow" aria-hidden="true">→</span>
+                        <span class="ai-zone-action-result">切换【轻松模式】</span>
+                    </button>
+                    <button type="button" class="ai-zone-action-btn" onclick="triggerAiExperience('advanced')">
+                        <span class="ai-zone-action-scene">每日行动稳定完成</span>
+                        <span class="ai-zone-action-arrow" aria-hidden="true">→</span>
+                        <span class="ai-zone-action-result">切换【进阶模式】</span>
+                    </button>
+                    <button type="button" class="ai-zone-action-btn ai-zone-action-btn--wake" onclick="triggerAiExperience('wake')">
+                        <span class="ai-zone-action-scene">低活跃状态</span>
+                        <span class="ai-zone-action-arrow" aria-hidden="true">→</span>
+                        <span class="ai-zone-action-result">触发 AI 流失唤醒</span>
+                    </button>
                 </div>
+                <div class="daily-summary-actions ai-zone-footer" id="aiZoneFooter" style="margin-top: 16px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeAiMemberZoneInfo()">关闭</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI 流失唤醒挽留弹窗（居中，不跳转页面） -->
+        <div class="invite-modal-overlay hidden" id="aiChurnWakeOverlay" onclick="if(event.target===this)closeAiChurnWakeModal()">
+            <div class="invite-modal-card ai-churn-wake-card">
+                <div class="invite-modal-title">温馨提示</div>
+                <p class="ai-churn-wake-text">
+                    您近期每日行动明显下降，系统已自动为您调整为轻松成长计划，帮你平缓回归节奏。
+                </p>
+                <div class="daily-summary-actions ai-churn-wake-actions">
+                    <button type="button" class="btn btn-primary" onclick="confirmAiChurnSwitchEasy()">一键切换轻松计划</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeAiChurnWakeModal()">稍后再调整</button>
+                </div>
+                <p class="ai-churn-wake-note">
+                    AI流失预警机制：系统持续监控登录间隔、行动完成度，识别流失风险自动推送唤醒方案，并下调任务难度。<br>
+                    本次完成弹窗交互与挽留页面设计，情感计算、用户画像模型后续迭代开发。
+                </p>
             </div>
         </div>
 
         <!-- 拍照确认完成 -->
         <div class="invite-modal-overlay hidden" id="taskPhotoOverlay">
             <div class="invite-modal-card task-photo-card">
-                <div class="invite-modal-title">拍照确认完成</div>
-                <div class="task-photo-hint">拍下完成瞬间，将自动分享至星球社区</div>
+                <div class="invite-modal-title">确认完成</div>
+                <div class="task-photo-hint">拍下完成瞬间，确认今日行动</div>
                 <div class="task-photo-preview hidden" id="taskPhotoPreview"></div>
                 <input type="file" id="taskPhotoInput" accept="image/*" capture="environment" class="hidden">
                 <div class="daily-summary-actions">
@@ -895,19 +955,64 @@
             </div>
         </div>
 
-        <!-- 邀约分享 -->
+        <!-- 已完成行动：分享去向选择 -->
+        <div class="invite-modal-overlay hidden" id="taskShareChoiceOverlay" onclick="if(event.target===this)closeTaskShareChoice()">
+            <div class="invite-modal-card task-share-choice-card" onclick="event.stopPropagation()">
+                <div class="invite-modal-title">分享</div>
+                <p class="invite-share-desc" id="taskShareChoiceDesc">把这份完成动态分享出去</p>
+                <div class="task-share-choice-actions">
+                    <button type="button" class="task-share-choice-btn wechat" onclick="shareTaskToWechat()">
+                        <span class="task-share-choice-icon">💬</span>
+                        <span class="task-share-choice-text">
+                            <strong>分享给微信好友</strong>
+                            <small>生成链接，发给好友一起闪闪发光</small>
+                        </span>
+                    </button>
+                    <button type="button" class="task-share-choice-btn community" onclick="shareTaskToCommunity()">
+                        <span class="task-share-choice-icon">🌍</span>
+                        <span class="task-share-choice-text">
+                            <strong>分享至星球社区</strong>
+                            <small>发布到同属星球小伙伴的动态流</small>
+                        </span>
+                    </button>
+                </div>
+                <button type="button" class="btn btn-secondary task-share-choice-close" onclick="closeTaskShareChoice()">取消</button>
+            </div>
+        </div>
+
+        <!-- 邀约伙伴：链接分享 -->
         <div class="invite-modal-overlay hidden" id="inviteModalOverlay">
-            <div class="invite-modal-card">
-                <div class="invite-modal-title">发起邀约</div>
-                <div class="invite-modal-text" id="inviteShareText"></div>
+            <div class="invite-modal-card invite-share-card">
+                <div class="invite-modal-title" id="inviteModalTitle">邀约伙伴</div>
+                <p class="invite-share-desc" id="inviteShareDesc">生成专属链接，通过微信发给伙伴一起打卡</p>
+                <div class="invite-link-box">
+                    <div class="invite-link-url" id="inviteShareUrl">链接生成中…</div>
+                    <button type="button" class="invite-link-copy" onclick="copyInviteLink()" title="复制链接">复制</button>
+                </div>
+                <p class="invite-share-hint" id="inviteShareHint">也可复制链接，粘贴到微信聊天发送</p>
                 <div class="daily-summary-actions">
-                    <button class="btn btn-primary" onclick="copyInviteText()">复制邀约文案</button>
-                    <button class="btn btn-secondary" onclick="closeInviteModal()">关闭</button>
+                    <button type="button" class="btn btn-primary" id="inviteWechatShareBtn" onclick="shareInviteToWechat()">微信分享</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeInviteModal()">关闭</button>
                 </div>
-                <div class="invite-accept-row">
-                    <input type="text" class="input-field" id="inviteCodeInput" placeholder="输入好友邀约码应约">
-                    <button class="btn btn-secondary" onclick="acceptInviteCode()">应约</button>
+                <div class="invite-accept-row" id="inviteAcceptRow">
+                    <input type="text" class="input-field" id="inviteCodeInput" placeholder="已有邀约码？粘贴后应约">
+                    <button type="button" class="btn btn-secondary" onclick="acceptInviteCode()">应约</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- 微信分享引导（点右上角 ···） -->
+        <div class="wechat-share-guide hidden" id="wechatShareGuideOverlay" onclick="if(event.target===this)closeWechatShareGuide()">
+            <div class="wechat-share-guide__arrow" aria-hidden="true">
+                <svg viewBox="0 0 120 90" width="120" height="90">
+                    <path d="M20 70 C40 70 70 55 95 18" fill="none" stroke="#E8C55A" stroke-width="3" stroke-linecap="round"/>
+                    <path d="M78 22 L98 14 L90 36" fill="none" stroke="#E8C55A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="wechat-share-guide__card" onclick="event.stopPropagation()">
+                <div class="wechat-share-guide__title">分享给微信好友</div>
+                <p class="wechat-share-guide__text">请点击右上角 <strong>···</strong><br>选择「发送给朋友」或「分享到朋友圈」</p>
+                <button type="button" class="btn btn-primary" onclick="closeWechatShareGuide()">我知道了</button>
             </div>
         </div>
 
@@ -923,16 +1028,20 @@
             </div>
         </div>
 
-        <!-- 查看时间目标 -->
+        <!-- 查看计划（原「我的计划」内容） -->
         <div class="invite-modal-overlay hidden" id="timeGoalModalOverlay">
             <div class="invite-modal-card time-goal-modal-card">
-                <div class="invite-modal-title" id="timeGoalModalTitle">本期目标</div>
+                <div class="invite-modal-title" id="timeGoalModalTitle">查看计划</div>
                 <div class="time-goal-modal-status" id="timeGoalModalStatus"></div>
+                <div class="card-desc time-goal-plan-desc" id="planCoreGoalDesc">查看你的长期成长路径与当前阶段</div>
+                <div class="plan-switcher" id="planSwitcher"></div>
+                <div class="plan-phase-timeline time-goal-plan-timeline" id="planPhaseTimeline"></div>
                 <div class="time-goal-modal-body" id="timeGoalModalBody"></div>
+                <button type="button" class="btn btn-secondary plan-add-btn" id="btnAddAnotherPlan" onclick="addAnotherPlan()">＋ 再订一条计划</button>
                 <div class="time-goal-modal-actions">
-                    <button type="button" class="btn btn-secondary" id="timeGoalUpdateBtn" onclick="updateTimeGoal()">更新目标</button>
-                    <button type="button" class="btn btn-secondary" id="timeGoalPauseBtn" onclick="pauseTimeGoal()">暂停目标</button>
-                    <button type="button" class="btn btn-secondary time-goal-abandon-btn" id="timeGoalAbandonBtn" onclick="abandonTimeGoal()">放弃目标</button>
+                    <button type="button" class="btn btn-secondary" id="timeGoalUpdateBtn" onclick="updateTimeGoal()">更新计划</button>
+                    <button type="button" class="btn btn-secondary" id="timeGoalPauseBtn" onclick="pauseTimeGoal()">暂停计划</button>
+                    <button type="button" class="btn btn-secondary time-goal-abandon-btn" id="timeGoalAbandonBtn" onclick="abandonTimeGoal()">放弃计划</button>
                 </div>
                 <button type="button" class="btn btn-primary time-goal-close-btn" onclick="closeTimeGoalModal()">关闭</button>
             </div>
@@ -1024,19 +1133,19 @@
         <!-- 底部Tab导航 -->
         <div class="bottom-tab-bar">
             <div class="tab-nav">
-                <button class="tab-item active" onclick="switchTab('plan')">
+                <button class="tab-item active" data-tab="plan" onclick="switchTab('plan', event)">
                     <span class="tab-icon">🪐</span>
                     <span class="tab-label">点亮行动</span>
                 </button>
-                <button class="tab-item" onclick="switchTab('reward')">
+                <button class="tab-item" data-tab="reward" onclick="switchTab('reward', event)">
                     <span class="tab-icon">🏆</span>
                     <span class="tab-label">成长奖励</span>
                 </button>
-                <button class="tab-item" onclick="switchTab('energy')">
+                <button class="tab-item" data-tab="energy" onclick="switchTab('energy', event)">
                     <span class="tab-icon">⚡</span>
                     <span class="tab-label">能量中心</span>
                 </button>
-                <button class="tab-item" onclick="switchTab('member')">
+                <button class="tab-item" data-tab="member" onclick="switchTab('member', event)">
                     <span class="tab-icon">👤</span>
                     <span class="tab-label">会员中心</span>
                 </button>

@@ -6,47 +6,61 @@ const elementData = {
     name: '木型 · 生发型',
     subtitle: '理想主义者 · 共情者',
     image: '/images/avatar/sailor-wood-portrait.png',
-    traits: '理想、共情、上进、有风骨',
-    careers: ['教育', '写作', '公益', '文化创意'],
-    advice: '选中后，她会成为你的陪跑伙伴「青芽」，用文字和语音一路陪你慢慢长。',
+    traits: '理想、共情、上进、有风骨、乐于成长、愿意创造与帮助他人',
+    careers: ['教育培训', '内容创作', '公益文化', '设计创意', '医疗护理', '心理相关'],
   },
   fire: {
     name: '火型 · 传播型',
     subtitle: '热情领袖 · 表达者',
     image: '/images/avatar/sailor-fire-portrait.png',
-    traits: '热情、表达、感染力、行动力',
-    careers: ['HR', '销售', '主持', '市场营销'],
-    advice: '选中后，她会成为你的陪跑伙伴「焰焰」，热情陪你说话、鼓励你一点点点亮。',
+    traits: '热情、表达、感染力、行动力、外向、善于带动气氛',
+    careers: ['销售商务', '市场品牌', '传媒主持', '人力招聘', '直播运营', '活动策划'],
   },
   earth: {
     name: '土型 · 承载型',
     subtitle: '稳重守护者 · 协调者',
     image: '/images/avatar/sailor-earth-portrait.png',
-    traits: '稳重、守信、包容、责任心',
-    careers: ['公务员', '行政', '会计', '后勤'],
-    advice: '选中后，她会成为你的陪跑伙伴「安安」，稳稳陪着你，不催不赶。',
+    traits: '稳重、守信、包容、责任心、务实、善于协调与托底',
+    careers: ['行政运营', '财务会计', '项目管理', '客户服务', '后勤保障', '稳定岗/体制内'],
   },
   metal: {
     name: '金型 · 决断型',
     subtitle: '正义执行者 · 决策者',
     image: '/images/avatar/sailor-metal-portrait.png',
-    traits: '理性、正义、果断、重情义',
-    careers: ['创业', '法律', '金融', '风控'],
-    advice: '选中后，她会成为你的陪跑伙伴「澄澄」，帮你把路拆清楚，一步一步陪跑。',
+    traits: '理性、正义、果断、重情义、目标感强、原则清晰',
+    careers: ['创业管理', '法律合规', '金融投资', '技术研发', '工程制造', '风控审计'],
   },
   water: {
     name: '水型 · 洞察型',
     subtitle: '智慧洞察者 · 策略家',
     image: '/images/avatar/sailor-water-portrait.png',
-    traits: '聪慧、通透、共情、变通',
-    careers: ['心理咨询', '编剧', '咨询', '猎头'],
-    advice: '选中后，她会成为你的陪跑伙伴「涟涟」，先听你说，再温柔陪你往前。',
+    traits: '聪慧、通透、变通、善观察、敏感细腻、策略思维',
+    careers: ['咨询顾问', '产品策略', '数据分析', '研究策划', '猎头招聘', '自由职业'],
   },
 }
 
 let selectedElement = null
 
+function restorePortraitImages() {
+  document.querySelectorAll('.element-card[data-element]').forEach((card) => {
+    const key = card.getAttribute('data-element')
+    const data = elementData[key]
+    const img = card.querySelector('.goddess-avatar img')
+    if (img && data?.image) {
+      img.src = data.image
+      img.alt = data.name
+    }
+  })
+  const detailImg = document.getElementById('detailAvatarImg')
+  if (detailImg && !detailImg.getAttribute('src')) {
+    detailImg.src = elementData.wood.image
+  }
+}
+
 export function initWuxingSelectView(router) {
+  // 确认跳转前曾清空 img.src；返回/热更新后把头像补回
+  restorePortraitImages()
+
   window.selectElement = (element) => {
     document.querySelectorAll('.element-card').forEach((card) => {
       card.classList.remove('selected')
@@ -70,7 +84,6 @@ export function initWuxingSelectView(router) {
     setText('detailTitle', data.name)
     setText('detailSubtitle', data.subtitle)
     setText('detailTraits', data.traits)
-    setText('detailAdvice', data.advice)
 
     const avatar = document.getElementById('detailAvatar')
     if (avatar) avatar.className = `detail-avatar ${element}`
@@ -115,14 +128,10 @@ export function initWuxingSelectView(router) {
       userStore.setOnboardingStep('plan')
     }
 
-    // 释放大图，降低进入下一页时的 WebView 内存压力（真机闪退高发点）
-    document.querySelectorAll('.goddess-avatar img, #detailAvatarImg').forEach((img) => {
-      img.removeAttribute('src')
-      img.src = ''
-    })
     window.closeDetail?.()
 
     // 避免 alert 阻塞后再跳转导致部分 Android WebView 崩掉
+    // 注意：不要在跳转前清空头像 src，否则停留/返回本页会出现空白
     const personality = selectedElement
     router.replace({ path: '/onboarding/plan-create', query: { personality } }).catch(() => {
       window.location.hash = `#/onboarding/plan-create?personality=${personality}`
