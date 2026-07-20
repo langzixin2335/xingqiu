@@ -1847,6 +1847,10 @@
             animation: none;
         }
 
+        .planet-light-btn.is-pulse {
+            animation: lightBtnPulse 0.7s ease-in-out infinite;
+        }
+
         .planet.ready-light .planet-body {
             animation: readyPlanetGlow 1.2s ease-in-out infinite;
         }
@@ -1888,6 +1892,301 @@
                     0 0 0 3px rgba(18, 18, 26, 0.35),
                     0 0 22px 4px rgba(232, 197, 90, 0.65);
             }
+        }
+
+        /* 计划完成礼包开盒仪式 */
+        .plan-pack-ceremony-card {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 340px;
+            padding: 28px 22px 22px;
+            text-align: center;
+            border-radius: 22px;
+            border: 1px solid rgba(212, 185, 106, 0.55);
+            background:
+                radial-gradient(circle at 50% 0%, rgba(232, 197, 90, 0.28), transparent 52%),
+                radial-gradient(circle at 50% 100%, rgba(180, 90, 60, 0.16), transparent 48%),
+                linear-gradient(165deg, #241a14 0%, #141018 100%);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+            animation: pandoraRise 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+        }
+
+        .plan-pack-badge {
+            display: inline-block;
+            margin-bottom: 14px;
+            padding: 5px 12px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            color: #1a1520;
+            background: linear-gradient(135deg, #f0d78c, #d4b96a);
+        }
+
+        .plan-pack-box {
+            position: relative;
+            width: 110px;
+            height: 100px;
+            margin: 0 auto 18px;
+            perspective: 420px;
+        }
+
+        .plan-pack-body {
+            position: absolute;
+            left: 14px;
+            right: 14px;
+            bottom: 0;
+            height: 58px;
+            border-radius: 10px 10px 14px 14px;
+            background: linear-gradient(160deg, #c45a3a 0%, #8a3020 55%, #5c1e14 100%);
+            border: 1px solid rgba(240, 215, 140, 0.45);
+            box-shadow:
+                inset 0 2px 0 rgba(255, 255, 255, 0.18),
+                0 10px 22px rgba(120, 40, 20, 0.45);
+        }
+
+        .plan-pack-body::after {
+            content: '✦';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            color: #f0d78c;
+            font-size: 18px;
+            text-shadow: 0 0 10px rgba(240, 215, 140, 0.7);
+        }
+
+        .plan-pack-lid {
+            position: absolute;
+            left: 10px;
+            right: 10px;
+            top: 10px;
+            height: 34px;
+            border-radius: 12px 12px 5px 5px;
+            background: linear-gradient(160deg, #e8a070 0%, #b04830 100%);
+            border: 1px solid rgba(240, 215, 140, 0.5);
+            transform-origin: bottom center;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+            animation: planPackLidIdle 2.2s ease-in-out infinite;
+            z-index: 2;
+        }
+
+        .plan-pack-ribbon {
+            position: absolute;
+            left: 50%;
+            top: 8px;
+            bottom: 0;
+            width: 16px;
+            margin-left: -8px;
+            background: linear-gradient(180deg, #f0d78c, #d4b96a 40%, #b89b4a);
+            border-radius: 4px;
+            z-index: 3;
+            pointer-events: none;
+            box-shadow: 0 0 12px rgba(212, 185, 106, 0.45);
+        }
+
+        .plan-pack-ribbon::before {
+            content: '';
+            position: absolute;
+            left: -28px;
+            right: -28px;
+            top: 22px;
+            height: 14px;
+            background: linear-gradient(90deg, transparent, #f0d78c 18%, #d4b96a 50%, #f0d78c 82%, transparent);
+            border-radius: 4px;
+        }
+
+        .plan-pack-glow {
+            position: absolute;
+            inset: 8% 0 0;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(240, 215, 140, 0.4), transparent 70%);
+            filter: blur(8px);
+            z-index: -1;
+            animation: atmospherePulse 2s ease-in-out infinite;
+        }
+
+        .plan-pack-sparkles {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        .plan-pack-sparkles span {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #f0d78c;
+            box-shadow: 0 0 8px rgba(240, 215, 140, 0.9);
+        }
+
+        .plan-pack-sparkles span:nth-child(1) { left: 8%; top: 30%; }
+        .plan-pack-sparkles span:nth-child(2) { right: 10%; top: 18%; }
+        .plan-pack-sparkles span:nth-child(3) { left: 18%; bottom: 12%; }
+        .plan-pack-sparkles span:nth-child(4) { right: 16%; bottom: 22%; }
+
+        @keyframes planPackLidIdle {
+            0%, 100% { transform: translateY(0) rotateX(0deg); }
+            50% { transform: translateY(-5px) rotateX(-6deg); }
+        }
+
+        .plan-pack-box.is-opening .plan-pack-lid {
+            animation: planPackLidOpen 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        .plan-pack-box.is-opening .plan-pack-ribbon {
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+
+        .plan-pack-box.is-opening .plan-pack-sparkles,
+        .plan-pack-box.is-opened .plan-pack-sparkles {
+            opacity: 1;
+            animation: planPackSparkle 1.2s ease-out forwards;
+        }
+
+        @keyframes planPackLidOpen {
+            0% { transform: translateY(0) rotateX(0deg); }
+            100% { transform: translateY(-18px) rotateX(-118deg); }
+        }
+
+        @keyframes planPackSparkle {
+            0% { opacity: 0; transform: scale(0.6); }
+            40% { opacity: 1; transform: scale(1.15); }
+            100% { opacity: 0.85; transform: scale(1); }
+        }
+
+        .plan-pack-title {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent-gold);
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .plan-pack-desc {
+            margin: 0 0 18px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .plan-pack-reward-wrap {
+            margin: 0 0 16px;
+            text-align: left;
+            animation: giftPop 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+            max-height: min(42vh, 320px);
+            overflow-y: auto;
+        }
+
+        .plan-pack-reward-wrap.hidden {
+            display: none;
+        }
+
+        .plan-pack-reward-section {
+            margin-bottom: 12px;
+        }
+
+        .plan-pack-reward-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .plan-pack-reward-section-title {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: var(--accent-gold);
+            margin-bottom: 8px;
+            padding-left: 2px;
+        }
+
+        .plan-pack-reward-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+        }
+
+        .plan-pack-reward-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(212, 185, 106, 0.35);
+            background: rgba(212, 185, 106, 0.1);
+        }
+
+        .plan-pack-reward-empty {
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px dashed rgba(212, 185, 106, 0.28);
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .plan-pack-reward-icon {
+            font-size: 22px;
+            line-height: 1.2;
+        }
+
+        .plan-pack-reward-text {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 0;
+        }
+
+        .plan-pack-reward-text strong {
+            font-size: 14px;
+            color: var(--accent-gold);
+            font-weight: 700;
+            line-height: 1.4;
+        }
+
+        .plan-pack-reward-text small {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .plan-pack-reward-tag {
+            flex-shrink: 0;
+            font-size: 11px;
+            font-weight: 700;
+            color: #1a1520;
+            background: rgba(232, 197, 90, 0.85);
+            border-radius: 999px;
+            padding: 3px 8px;
+            line-height: 1.2;
+            margin-top: 2px;
+        }
+
+        .plan-pack-actions .btn {
+            width: 100%;
+            min-height: 48px;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: #1a1520;
+            background: linear-gradient(135deg, #e8c55a, #d4b96a);
+            box-shadow: 0 6px 18px rgba(212, 185, 106, 0.4);
+            cursor: pointer;
+        }
+
+        .plan-pack-actions .btn:disabled {
+            opacity: 0.6;
+            cursor: wait;
         }
 
         /* 潘多拉魔盒 */
@@ -2059,10 +2358,94 @@
             animation: giftPop 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.2);
         }
 
+        .pandora-reward-list {
+            list-style: none;
+            margin: 4px 0 16px;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            text-align: left;
+        }
+
+        .pandora-reward-list > li {
+            margin: 0;
+            padding: 0;
+        }
+
+        .pandora-reward-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(212, 185, 106, 0.35);
+            background: rgba(212, 185, 106, 0.1);
+            color: inherit;
+            cursor: pointer;
+            text-align: left;
+            transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+            animation: giftPop 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+        }
+
+        .pandora-reward-list > li:nth-child(2) .pandora-reward-item {
+            animation-delay: 0.06s;
+        }
+
+        .pandora-reward-list > li:nth-child(3) .pandora-reward-item {
+            animation-delay: 0.12s;
+        }
+
+        .pandora-reward-item:hover,
+        .pandora-reward-item:active {
+            border-color: rgba(212, 185, 106, 0.7);
+            background: rgba(212, 185, 106, 0.18);
+            transform: translateY(-1px);
+        }
+
+        .pandora-reward-item.is-selected {
+            border-color: rgba(212, 185, 106, 0.85);
+            background: rgba(212, 185, 106, 0.22);
+            box-shadow: 0 0 0 1px rgba(212, 185, 106, 0.25);
+        }
+
+        .pandora-reward-item-icon {
+            flex-shrink: 0;
+            font-size: 22px;
+            line-height: 1.2;
+        }
+
+        .pandora-reward-item-title {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent-gold);
+            line-height: 1.45;
+        }
+
+        .pandora-reward-item-check {
+            flex-shrink: 0;
+            min-width: 18px;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent-gold);
+            line-height: 1.3;
+        }
+
         .pandora-reward-hint {
             font-size: 12px;
             color: var(--text-muted);
-            margin: -8px 0 16px;
+            margin: 0 0 16px;
+        }
+
+        .pandora-reward-hint--top {
+            margin: 0 0 10px;
+        }
+
+        #pandoraClaimSelectedBtn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
         }
 
         .today-actions-heading {
@@ -2518,6 +2901,7 @@
                 0 0 0 1px rgba(212, 185, 106, 0.35),
                 0 8px 22px rgba(212, 185, 106, 0.12);
             animation: task-pending-pulse 2.2s ease-in-out infinite;
+            overflow: visible;
         }
 
         .task-item.task-pending::before {
@@ -2538,14 +2922,6 @@
 
         .task-item.task-pending .task-meta {
             color: var(--accent-gold);
-        }
-
-        .task-item.task-pending .task-action-btn.confirm {
-            color: #1a1520;
-            font-weight: 700;
-            border-color: transparent;
-            background: linear-gradient(135deg, #e8c55a, #d4b96a);
-            box-shadow: 0 4px 12px rgba(212, 185, 106, 0.35);
         }
 
         .task-item.completed {
@@ -2624,6 +3000,8 @@
             align-items: center;
             flex-shrink: 0;
             margin-left: auto;
+            overflow: visible;
+            padding: 4px 2px;
         }
 
         .task-action-btn {
@@ -2669,6 +3047,40 @@
 
         .task-action-btn.confirm:hover {
             background: linear-gradient(135deg, rgba(212, 185, 106, 0.4), rgba(184, 155, 74, 0.28));
+        }
+
+        /* 待完成「确认完成」：与点亮按钮同款跳动（放在通用样式之后，避免被覆盖） */
+        .task-item.task-pending .task-action-btn.confirm,
+        .task-action-btn.confirm.is-light-pulse {
+            color: #1a1520 !important;
+            font-weight: 800 !important;
+            letter-spacing: 0.06em;
+            height: 32px;
+            padding: 0 14px;
+            border: 1px solid rgba(212, 185, 106, 0.85) !important;
+            background: linear-gradient(135deg, #e8c55a, #d4b96a) !important;
+            transition: none !important;
+            box-shadow:
+                0 0 0 3px rgba(18, 18, 26, 0.35),
+                0 6px 18px rgba(212, 185, 106, 0.55);
+            animation: confirmBtnBounce 1.4s ease-in-out infinite !important;
+            will-change: transform, box-shadow;
+            transform-origin: center center;
+        }
+
+        @keyframes confirmBtnBounce {
+            0%, 100% {
+                transform: translateY(0) scale(1);
+                box-shadow:
+                    0 0 0 3px rgba(18, 18, 26, 0.35),
+                    0 6px 18px rgba(212, 185, 106, 0.45);
+            }
+            50% {
+                transform: translateY(-4px) scale(1.1);
+                box-shadow:
+                    0 0 0 3px rgba(18, 18, 26, 0.35),
+                    0 0 22px 4px rgba(232, 197, 90, 0.7);
+            }
         }
 
         .task-social {
@@ -3367,9 +3779,46 @@
         }
 
         .dimension-bar-wrap {
+            position: relative;
             flex: 1 1 50%;
             min-width: 0;
             max-width: 50%;
+            overflow: visible;
+        }
+
+        /* 领取礼包后：进度条斜上方「已完成」水印 */
+        .dimension-done-stamp {
+            position: absolute;
+            right: 2px;
+            top: -12px;
+            z-index: 2;
+            padding: 2px 8px;
+            border: 1.5px solid rgba(212, 185, 106, 0.75);
+            border-radius: 4px;
+            color: rgba(232, 197, 90, 0.88);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            line-height: 1.2;
+            background: rgba(20, 16, 24, 0.35);
+            transform: rotate(-18deg);
+            transform-origin: center;
+            pointer-events: none;
+            user-select: none;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+            box-shadow: 0 0 0 1px rgba(212, 185, 106, 0.15);
+        }
+
+        .dimension-item.is-pack-claimed .dimension-bar-fill {
+            opacity: 1;
+        }
+
+        .dimension-reward-pack-btn.is-claimed,
+        .dimension-reward-pack-btn:disabled {
+            opacity: 0.65;
+            cursor: default;
+            animation: none !important;
+            box-shadow: none;
         }
 
         .dimension-goal-actions {
@@ -4827,7 +5276,19 @@
             color: var(--accent-gold);
             font-weight: 700;
             line-height: 1.4;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
+        }
+
+        .gift-card-tip {
+            font-size: 13px;
+            line-height: 1.55;
+            color: var(--text-secondary);
+            margin: 0 0 18px;
+            padding: 0 4px;
+        }
+
+        .gift-card-tip.hidden {
+            display: none;
         }
 
         .gift-claim-btn {

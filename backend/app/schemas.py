@@ -382,9 +382,9 @@ class EnergyChatRequest(BaseModel):
 class EnergyChatResponse(BaseModel):
     reply: str
     source: str = "ai"
-    companion_name: str = "星光"
-    companion_display: str = "你的伙伴·星光"
-    companion_avatar: str = "/images/avatar/sailor-fire-portrait.png"
+    companion_name: str = "星喵人"
+    companion_display: str = "你的能量星宠 · 星喵人"
+    companion_avatar: str = "/images/avatar/pet-artemis.png"
     personality: str | None = None
 
 
@@ -412,6 +412,7 @@ class DemoGuidesOut(BaseModel):
 
     growth_reward_pack: bool = False
     plan_complete_planets: list[str] = Field(default_factory=list)
+    plan_pack_claimed_planets: list[str] = Field(default_factory=list)
 
 
 class DashboardOut(BaseModel):

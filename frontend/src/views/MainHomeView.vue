@@ -14,7 +14,7 @@
             <!-- ========== Tab 1: 计划进度 ========== -->
             <div class="tab-content active" id="tab-plan">
                 <!-- 点亮我的星球 -->
-                <div class="card">
+                <div class="card" id="lightPlanetCard">
                     <div class="card-title">
                         <span class="icon">🪐</span>
                         点亮我的星球
@@ -46,7 +46,7 @@
                             </div>
                             <div class="task-actions">
                                 <button class="task-action-btn invite" onclick="shareTask(this)" title="邀约伙伴">邀约伙伴</button>
-                                <button class="task-action-btn confirm" onclick="confirmTaskComplete(this)" title="确认完成">确认完成</button>
+                                <button class="task-action-btn confirm is-light-pulse" onclick="confirmTaskComplete(this)" title="确认完成">确认完成</button>
                             </div>
                         </div>
                     </div>
@@ -83,13 +83,12 @@
     
             <!-- ========== Tab 3: 能量中心 ========== -->
             <div class="tab-content" id="tab-energy">
-                <!-- 上半：你的伙伴对话（文字 + 语音） -->
+                <!-- 上半：能量星宠对话（文字 + 语音） -->
                 <div class="card energy-chat-card">
                     <div class="companion-header" id="companionHeader">
-                        <img class="companion-header-avatar" id="companionHeaderAvatar" src="/images/avatar/sailor-fire-portrait.png" alt="你的伙伴">
+                        <img class="companion-header-avatar" id="companionHeaderAvatar" src="/images/avatar/pet-artemis.png" alt="你的能量星宠 · 星喵人">
                         <div class="companion-header-text">
-                            <div class="companion-header-name" id="companionHeaderName">你的伙伴·星光</div>
-                            <div class="companion-header-desc" id="companionHeaderDesc">文字聊聊，也能语音陪你说几句</div>
+                            <div class="companion-header-name" id="companionHeaderName">你的能量星宠 · 星喵人</div>
                         </div>
                         <button type="button" class="companion-voice-toggle" id="companionVoiceToggle" onclick="toggleCompanionVoiceSpeak()" aria-pressed="true" title="回复时朗读">🔊</button>
                     </div>
@@ -97,9 +96,9 @@
                         <div class="energy-chat-messages" id="energyChatMessages">
                             <div class="energy-chat-msg assistant" id="companionGreetingMsg">
                                 <div class="energy-chat-avatar companion-avatar-img">
-                                    <img id="companionGreetingAvatar" src="/images/avatar/sailor-fire-portrait.png" alt="">
+                                    <img id="companionGreetingAvatar" src="/images/avatar/pet-artemis.png" alt="">
                                 </div>
-                                <div class="energy-chat-bubble" id="companionGreetingBubble">我是你的伙伴。想补充哪颗星球的能量，都跟我说一声；也可以按住麦克风跟我说话。</div>
+                                <div class="energy-chat-bubble" id="companionGreetingBubble">喵～我是你的能量星宠星喵人。想补充哪颗星球的能量，都跟我说一声；也可以按住麦克风跟我说话。</div>
                             </div>
                         </div>
                         <div class="energy-chat-composer">
@@ -108,13 +107,13 @@
                                 type="text"
                                 class="energy-chat-input"
                                 id="energyChatInput"
-                                placeholder="跟你的伙伴说点什么…"
+                                placeholder="跟星喵人说点什么…"
                                 maxlength="500"
                                 onkeypress="submitEnergyChat(event)"
                             >
                             <button type="button" class="energy-chat-send" id="energyChatSendBtn" onclick="sendEnergyChat()">发送</button>
                         </div>
-                        <div class="companion-voice-hint" id="companionVoiceHint">点麦克风说话，她听完会温柔回答；也可打开喇叭让她读出来</div>
+                        <div class="companion-voice-hint" id="companionVoiceHint">点麦克风说话，星喵人听完会温柔回答；也可打开喇叭让它读出来</div>
                     </div>
                 </div>
 
@@ -712,15 +711,14 @@
             </div>
         </div>
 
-        <!-- 打开魔盒：系统奖励礼品卡 -->
+        <!-- 打开魔盒：三项奖励任选其一 -->
         <div class="daily-summary-overlay hidden" id="pandoraRewardOverlay">
             <canvas class="fireworks-canvas" id="pandoraFireworksCanvas"></canvas>
             <div class="gift-card pandora-reward-card">
-                <div class="pandora-reward-icon" id="pandoraRewardIcon">🎟️</div>
-                <div class="gift-card-title">恭喜你获得</div>
-                <div class="gift-card-reward" id="pandoraRewardText">线上课限时3天体验券</div>
-                <div class="pandora-reward-hint">奖励已放入你的成长礼包</div>
-                <button type="button" class="btn btn-primary gift-claim-btn pandora-claim-btn" onclick="closePandoraReward()">领取奖励</button>
+                <div class="gift-card-title">打开潘多拉魔盒</div>
+                <div class="pandora-reward-hint pandora-reward-hint--top">请选择其中一项奖励领取</div>
+                <ul class="pandora-reward-list" id="pandoraRewardList" aria-label="潘多拉魔盒可选奖励"></ul>
+                <button type="button" class="btn btn-primary gift-claim-btn pandora-claim-btn" id="pandoraClaimSelectedBtn" onclick="claimSelectedPandoraReward()" disabled>领取所选奖励</button>
             </div>
         </div>
 
@@ -951,6 +949,7 @@
                 </div>
                 <div class="gift-card-title">恭喜获得</div>
                 <div class="gift-card-reward" id="giftFragmentText">星球能量碎片 ×1</div>
+                <div class="gift-card-tip hidden" id="giftFragmentTip">恭喜已集齐能量碎片，快去点亮专属星球吧！</div>
                 <button class="btn btn-primary gift-claim-btn" onclick="closeDailySummary()">收获奖励</button>
             </div>
         </div>
@@ -1071,7 +1070,40 @@
             </div>
         </div>
 
-        <!-- 奖励礼包（与制定计划页弹窗一致） -->
+        <!-- 计划完成：隆重开启奖励礼包 -->
+        <div class="daily-summary-overlay hidden" id="planPackCeremonyOverlay" onclick="if(event.target===this)closePlanPackCeremony()">
+            <canvas class="fireworks-canvas" id="planPackFireworksCanvas"></canvas>
+            <div class="plan-pack-ceremony-card" id="planPackCeremonyCard">
+                <div class="plan-pack-badge">计划完成礼遇</div>
+                <div class="plan-pack-box" id="planPackBox" aria-hidden="true">
+                    <div class="plan-pack-lid"></div>
+                    <div class="plan-pack-body"></div>
+                    <div class="plan-pack-ribbon"></div>
+                    <div class="plan-pack-glow"></div>
+                    <div class="plan-pack-sparkles" aria-hidden="true">
+                        <span></span><span></span><span></span><span></span>
+                    </div>
+                </div>
+                <div class="plan-pack-title" id="planPackCeremonyTitle">计划已完成</div>
+                <p class="plan-pack-desc" id="planPackCeremonyDesc">你走完了这一程，专属奖励礼包已备好。点下方开启，收下这份仪式感。</p>
+                <div class="plan-pack-reward-wrap hidden" id="planPackRewardWrap" aria-label="计划完成礼包奖励">
+                    <div class="plan-pack-reward-section">
+                        <div class="plan-pack-reward-section-title">随机小惊喜</div>
+                        <ul class="plan-pack-reward-list" id="planPackSystemList"></ul>
+                    </div>
+                    <div class="plan-pack-reward-section">
+                        <div class="plan-pack-reward-section-title">悦己奖励</div>
+                        <ul class="plan-pack-reward-list" id="planPackSelfList"></ul>
+                    </div>
+                </div>
+                <div class="plan-pack-actions">
+                    <button type="button" class="btn btn-primary plan-pack-open-btn" id="planPackOpenBtn" onclick="openPlanPackCeremony()">开启礼包</button>
+                    <button type="button" class="btn btn-primary plan-pack-claim-btn hidden" id="planPackClaimBtn" onclick="claimPlanPackCeremony()">收入我的奖励</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 奖励礼包（未完成时预览 / 配置） -->
         <div class="invite-modal-overlay hidden" id="rewardPackModalOverlay">
             <div class="invite-modal-card reward-pack-modal-card">
                 <div class="invite-modal-title" id="rewardPackModalTitle">完成即可得奖励礼包</div>
@@ -1174,3 +1206,35 @@ onBeforeUnmount(() => {
   if (cleanup) cleanup()
 })
 </script>
+
+<style>
+/* 今日行动「确认完成」跳动：写在页面内，避免被全局样式覆盖 */
+@keyframes confirmBtnBounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow:
+      0 0 0 3px rgba(18, 18, 26, 0.35),
+      0 6px 18px rgba(212, 185, 106, 0.45);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.1);
+    box-shadow:
+      0 0 0 3px rgba(18, 18, 26, 0.35),
+      0 0 22px 4px rgba(232, 197, 90, 0.7);
+  }
+}
+
+.legacy-page--main-home .task-action-btn.confirm.is-light-pulse {
+  color: #1a1520 !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid rgba(212, 185, 106, 0.85) !important;
+  background: linear-gradient(135deg, #e8c55a, #d4b96a) !important;
+  transition: none !important;
+  animation: confirmBtnBounce 1.4s ease-in-out infinite !important;
+  transform-origin: center center;
+}
+</style>

@@ -221,12 +221,15 @@ def ensure_demo_reward_guide(
     user: User,
     planet_type: str = _LIGHT_TEST_PLANET,
 ) -> dict:
-    """首页固定引导：确认完成 → 点亮潘多拉 → 满级后去成长奖励领计划礼包。
+    """比赛评委固定演示链（勿随意改相位逻辑）：
 
-    - 待完成 1 条 + 碎片 6/7：保持
-    - 已全完成且可点亮：保持
-    - 引导星球已满级：保持，便于成长奖励页 100% + 礼包高亮
+    确认完成(碎片6→7) → 点亮潘多拉 → 满级100% → 成长奖励领计划礼包 → 保持100%+已完成。
+
+    - 待完成 1 条 + 碎片 6/7：保持 await_complete
+    - 已全完成且可点亮：保持 await_light
+    - 引导星球已满级：保持 await_claim（前端领取后打水印，不再 prep-light 重置）
     - 其它状态：重新备好（生存默认 Lv.6，点亮即满级）
+    - 重跑全流程：调 /dev/prep-light-test（前端会清过期「已领取」标记）
     """
     from .services.planet_service import (
         FRAGMENTS_PER_LIGHT,

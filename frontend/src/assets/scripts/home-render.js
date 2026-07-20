@@ -117,8 +117,8 @@ export function renderTasks(tasks, options = {}) {
       const actions = checked
         ? `<button class="task-action-btn invite share-friend" onclick="shareTask(this)" title="分享">分享</button>`
         : `
-          <button class="task-action-btn invite" onclick="shareTask(this)" title="邀约伙伴">邀约伙伴</button>
-          <button class="task-action-btn confirm" onclick="confirmTaskComplete(this)" title="确认完成">确认完成</button>`
+          <button type="button" class="task-action-btn invite" onclick="shareTask(this)" title="邀约伙伴">邀约伙伴</button>
+          <button type="button" class="task-action-btn confirm is-light-pulse" onclick="confirmTaskComplete(this)" title="确认完成">确认完成</button>`
 
       return `
       <div class="task-item${checked ? ' completed' : ' task-pending'}${focused ? ' avatar-focus' : ''}" data-task="${task.id}" data-time-type="${task.time_type}" data-post-id="${task.post_id || ''}" data-completed="${checked ? '1' : '0'}" tabindex="0" role="button" aria-label="${pending ? '待完成行动：' : '已完成行动：'}${escapeHtml(task.title)}">
@@ -132,6 +132,32 @@ export function renderTasks(tasks, options = {}) {
       </div>`
     })
     .join('')
+
+  // JS 动画兜底：确保「确认完成」一定有点亮同款跳动（不受 CSS 覆盖 / 系统减少动态影响）
+  container.querySelectorAll('.task-action-btn.confirm.is-light-pulse').forEach((btn) => {
+    try {
+      btn.getAnimations?.().forEach((a) => a.cancel())
+      btn.animate(
+        [
+          {
+            transform: 'translateY(0) scale(1)',
+            boxShadow: '0 0 0 3px rgba(18,18,26,0.35), 0 6px 18px rgba(212,185,106,0.45)',
+          },
+          {
+            transform: 'translateY(-4px) scale(1.1)',
+            boxShadow: '0 0 0 3px rgba(18,18,26,0.35), 0 0 22px 4px rgba(232,197,90,0.7)',
+          },
+          {
+            transform: 'translateY(0) scale(1)',
+            boxShadow: '0 0 0 3px rgba(18,18,26,0.35), 0 6px 18px rgba(212,185,106,0.45)',
+          },
+        ],
+        { duration: 1400, iterations: Infinity, easing: 'ease-in-out' }
+      )
+    } catch {
+      btn.style.animation = 'confirmBtnBounce 1.4s ease-in-out infinite'
+    }
+  })
 
   const markFocus = (taskId) => {
     container.querySelectorAll('.task-item').forEach((el) => {
@@ -453,8 +479,12 @@ export function renderProgress(data) {
   const order = Object.keys(PLANET_CONFIG)
   const byType = Object.fromEntries((data.planets || []).map((p) => [p.planet_type, p]))
   const completeSet = new Set(data?.demo_guides?.plan_complete_planets || [])
+  const claimedSet =
+    typeof window.getPlanPackClaimedSet === 'function'
+      ? window.getPlanPackClaimedSet()
+      : new Set(data?.demo_guides?.plan_pack_claimed_planets || [])
 
-  // 真实点亮进度；满级（计划完成）的星球进度 100%，奖励礼包高亮闪烁
+  // 进度只跟真实满级走；已领水印另判（避免 prep-light 重备后仍被本地标记锁死 100%）
   const levelInfos = Object.fromEntries(
     order.map((type) => {
       const info = planetLevelInfo(byType[type])
@@ -516,24 +546,29 @@ export function renderProgress(data) {
           const statusTip =
             status === 'paused' ? '已暂停' : status === 'abandoned' ? '已放弃' : ''
           const planDone = percent >= 100 || completeSet.has(type)
-          // 计划完成：奖励礼包持续闪烁高亮，引导领取
-          const packBlink = planDone ? ' is-blink is-claimable' : ''
+          // 仅满级且本地已领 → 终点态水印（比赛演示闭环）
+          const packClaimed = planDone && claimedSet.has(type)
+          // 计划完成且未领：礼包闪烁；已领：保持 100% + 已完成水印
+          const packBlink = planDone && !packClaimed ? ' is-blink is-claimable' : ''
+          const packBtnLabel = packClaimed ? '已领取' : planDone ? '领取礼包' : '奖励设置'
+          const packBtnDisabled = packClaimed ? ' disabled' : ''
           return `
-      <div class="dimension-item${status !== 'active' ? ` is-${status}` : ''}${planDone ? ' is-plan-complete' : ''}" data-planet-type="${type}">
+      <div class="dimension-item${status !== 'active' ? ` is-${status}` : ''}${planDone ? ' is-plan-complete' : ''}${packClaimed ? ' is-pack-claimed' : ''}" data-planet-type="${type}">
         ${renderMiniPlanetIcon(type, litRatio)}
         <div class="dimension-info">
           <div class="dimension-name">
-            <span class="dimension-title">${planetName}-点亮进度${percent}%<span class="dimension-lv">Lv.${level}/${maxLevel}</span>${statusTip ? `<span class="dimension-status-tag">${statusTip}</span>` : ''}${planDone ? '<span class="dimension-status-tag is-complete">计划完成</span>' : ''}</span>
+            <span class="dimension-title">${planetName}-点亮进度${percent}%<span class="dimension-lv">Lv.${level}/${maxLevel}</span>${statusTip ? `<span class="dimension-status-tag">${statusTip}</span>` : ''}</span>
           </div>
           <div class="dimension-bottom">
             <div class="dimension-bar-wrap">
+              ${packClaimed ? '<span class="dimension-done-stamp" aria-hidden="true">已完成</span>' : ''}
               <div class="dimension-bar">
                 <div class="dimension-bar-fill ${type}" style="width: ${percent}%"></div>
               </div>
             </div>
             <div class="dimension-goal-actions">
               <button type="button" class="dimension-goal-btn" onclick="viewTimeGoal('${type}')">查看计划</button>
-              <button type="button" class="dimension-goal-btn dimension-reward-pack-btn${packBlink}" onclick="viewRewardPack('${type}')">${planDone ? '领取礼包' : '奖励礼包'}</button>
+              <button type="button" class="dimension-goal-btn dimension-reward-pack-btn${packBlink}${packClaimed ? ' is-claimed' : ''}" onclick="viewRewardPack('${type}')"${packBtnDisabled}>${packBtnLabel}</button>
             </div>
           </div>
         </div>

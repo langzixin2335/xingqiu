@@ -1,6 +1,7 @@
 import api from '../../api'
 import { isNativeApp, takeTaskPhoto } from '../../utils/camera.js'
 import {
+  ENERGY_PET,
   createCompanionSpeechRecognition,
   getCompanion,
   pickCompanionCheckinLine,
@@ -140,7 +141,7 @@ function stopFireworks() {
     cancelAnimationFrame(fireworksRaf)
     fireworksRaf = null
   }
-  ;['fireworksCanvas', 'pandoraFireworksCanvas'].forEach((id) => {
+  ;['fireworksCanvas', 'pandoraFireworksCanvas', 'planPackFireworksCanvas'].forEach((id) => {
     const canvas = document.getElementById(id)
     if (canvas) {
       const ctx = canvas.getContext('2d')
@@ -217,25 +218,55 @@ function startFireworks(canvasId = 'fireworksCanvas') {
   }, 3200)
 }
 
+let pendingFragmentGuidePlanetType = null
+
 function showDailySummary(effects) {
   if (!effects?.all_complete_today || dailySummaryShownToday) return
   dailySummaryShownToday = true
   const overlay = document.getElementById('dailySummaryOverlay')
   const textEl = document.getElementById('giftFragmentText')
+  const tipEl = document.getElementById('giftFragmentTip')
   if (!overlay) return
   const fragment = effects.energy_fragment
+  const planetType = fragment?.planet_type || effects.planet_type || null
+  pendingFragmentGuidePlanetType = planetType
   const planetName =
     fragment?.planet_name ||
-    PLANET_FRAGMENT_NAME[effects.planet_type] ||
+    PLANET_FRAGMENT_NAME[planetType] ||
     '闪耀星球'
   if (textEl) textEl.textContent = `${planetName}能量碎片 ×1`
+  const ready =
+    !!(effects.ready_to_light || fragment?.ready_to_light) ||
+    Number(fragment?.total) >= 7
+  if (tipEl) {
+    tipEl.textContent = '恭喜已集齐能量碎片，快去点亮专属星球吧！'
+    tipEl.classList.toggle('hidden', !ready)
+  }
   overlay.classList.remove('hidden')
   startFireworks()
+}
+
+function guideToLightPlanetSection(planetType = null) {
+  window.switchTab?.('plan')
+  const target =
+    document.getElementById('lightPlanetCard') ||
+    document.getElementById('planetOrbit')
+  requestAnimationFrame(() => {
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (!planetType) return
+    const lightBtn = document.querySelector(
+      `.planet[data-planet-type="${planetType}"] .planet-light-btn`
+    )
+    lightBtn?.classList.add('is-pulse')
+    // 短暂高亮点亮按钮，引导用户点击
+    setTimeout(() => lightBtn?.classList.remove('is-pulse'), 4200)
+  })
 }
 
 const PANDORA_REWARDS = [
   { icon: '🎓', title: '线上课限时3天体验券' },
   { icon: '🏕️', title: '线下训练营9折折扣券' },
+  { icon: '🧴', title: '「清」系列益生元+「养」系列益生菌体验套装×1' },
 ]
 
 function showPandoraBox(planetType, planetInfo = null) {
@@ -386,6 +417,72 @@ function filterProducts() {
   })
 }
 
+const PLAN_PACK_CLAIMED_KEY = 'sp_plan_pack_claimed'
+
+/** 比赛固定演示：礼包已领取按用户隔离，避免串号；prep-light 重置等级后自动清掉过期标记 */
+function planPackClaimedStorageKey() {
+  try {
+    const id = useUserStore().user?.id ?? dashboardData?.user?.id
+    return id != null ? `${PLAN_PACK_CLAIMED_KEY}_${id}` : PLAN_PACK_CLAIMED_KEY
+  } catch {
+    return PLAN_PACK_CLAIMED_KEY
+  }
+}
+
+function readClaimedList(storageKey) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(storageKey) || '[]')
+    return Array.isArray(raw) ? raw.map(String) : []
+  } catch {
+    return []
+  }
+}
+
+function getPlanPackClaimedSet() {
+  const key = planPackClaimedStorageKey()
+  const set = new Set(readClaimedList(key))
+  // 兼容旧版全局 key，合并后写入用户 key
+  if (key !== PLAN_PACK_CLAIMED_KEY) {
+    for (const t of readClaimedList(PLAN_PACK_CLAIMED_KEY)) set.add(t)
+  }
+  return set
+}
+
+function persistPlanPackClaimed(set) {
+  const key = planPackClaimedStorageKey()
+  localStorage.setItem(key, JSON.stringify([...set]))
+  if (key !== PLAN_PACK_CLAIMED_KEY) {
+    localStorage.removeItem(PLAN_PACK_CLAIMED_KEY)
+  }
+}
+
+function markPlanPackClaimed(type) {
+  if (!type) return
+  const set = getPlanPackClaimedSet()
+  set.add(String(type))
+  persistPlanPackClaimed(set)
+}
+
+/** 服务端等级已跌破满级（如 prep-light 重备演示）时，清掉「已领取」，保证评委可重跑全流程 */
+function pruneStalePlanPackClaims(planets) {
+  const set = getPlanPackClaimedSet()
+  if (!set.size) return set
+  let changed = false
+  for (const type of [...set]) {
+    const p = (planets || []).find((x) => x.planet_type === type)
+    const max = Number(p?.max_level) || 7
+    const level = Number(p?.level) || 0
+    if (!p || level < max) {
+      set.delete(type)
+      changed = true
+    }
+  }
+  if (changed) persistPlanPackClaimed(set)
+  return set
+}
+
+window.getPlanPackClaimedSet = getPlanPackClaimedSet
+
 async function loadDashboard() {
   try {
     const { data } = await api.get('/home/dashboard')
@@ -432,6 +529,12 @@ async function loadDashboard() {
     renderProducts(data.products)
     renderMyRewards(data.rewards, data.badges)
     renderMember(data.user)
+    // 比赛演示：满级领取后保持 100%+水印；若已重置引导等级则自动清已领标记
+    const claimed = [...pruneStalePlanPackClaims(data.planets || [])]
+    data.demo_guides = {
+      ...(data.demo_guides || {}),
+      plan_pack_claimed_planets: claimed,
+    }
     renderProgress(data)
     setTimeout(() => {
       document.querySelectorAll('.dimension-bar-fill').forEach((bar) => {
@@ -1113,6 +1216,10 @@ export function initMainHomeView(router) {
   window.closeDailySummary = () => {
     stopFireworks()
     document.getElementById('dailySummaryOverlay')?.classList.add('hidden')
+    // 收获碎片后引导到「点亮我的星球」，避免停在今日行动列表
+    const planetType = pendingFragmentGuidePlanetType
+    pendingFragmentGuidePlanetType = null
+    setTimeout(() => guideToLightPlanetSection(planetType), 80)
   }
 
   window.lightPlanetNow = async (planetType) => {
@@ -1153,15 +1260,65 @@ export function initMainHomeView(router) {
     }
   }
 
-  window.openPandoraNow = async () => {
+  let selectedPandoraRewardIndex = null
+
+  function syncPandoraClaimButton() {
+    const btn = document.getElementById('pandoraClaimSelectedBtn')
+    if (!btn) return
+    const ready = selectedPandoraRewardIndex != null
+    btn.disabled = !ready
+    btn.textContent = ready ? '领取所选奖励' : '请先选择一项奖励'
+  }
+
+  function renderPandoraRewardChoices() {
+    const listEl = document.getElementById('pandoraRewardList')
+    if (!listEl) return
+    listEl.innerHTML = PANDORA_REWARDS.map(
+      (reward, index) => `
+      <li>
+        <button
+          type="button"
+          class="pandora-reward-item${selectedPandoraRewardIndex === index ? ' is-selected' : ''}"
+          data-pandora-index="${index}"
+          onclick="selectPandoraReward(${index})"
+          aria-pressed="${selectedPandoraRewardIndex === index ? 'true' : 'false'}"
+        >
+          <span class="pandora-reward-item-icon" aria-hidden="true">${reward.icon}</span>
+          <span class="pandora-reward-item-title">${reward.title}</span>
+          <span class="pandora-reward-item-check" aria-hidden="true">${selectedPandoraRewardIndex === index ? '✓' : ''}</span>
+        </button>
+      </li>`
+    ).join('')
+    syncPandoraClaimButton()
+  }
+
+  window.openPandoraNow = () => {
     document.getElementById('pandoraBoxOverlay')?.classList.add('hidden')
-    const reward = PANDORA_REWARDS[Math.floor(Math.random() * PANDORA_REWARDS.length)]
-    const textEl = document.getElementById('pandoraRewardText')
-    const iconEl = document.getElementById('pandoraRewardIcon')
-    if (textEl) textEl.textContent = reward.title
-    if (iconEl) iconEl.textContent = reward.icon
+    selectedPandoraRewardIndex = null
+    renderPandoraRewardChoices()
     document.getElementById('pandoraRewardOverlay')?.classList.remove('hidden')
     startFireworks('pandoraFireworksCanvas')
+  }
+
+  window.selectPandoraReward = (index) => {
+    const i = Number(index)
+    if (!Number.isInteger(i) || i < 0 || i >= PANDORA_REWARDS.length) return
+    selectedPandoraRewardIndex = i
+    renderPandoraRewardChoices()
+  }
+
+  window.claimSelectedPandoraReward = async () => {
+    if (selectedPandoraRewardIndex == null) {
+      showToast('请先选择一项奖励')
+      return
+    }
+    const reward = PANDORA_REWARDS[selectedPandoraRewardIndex]
+    if (!reward) return
+    const btn = document.getElementById('pandoraClaimSelectedBtn')
+    if (btn) {
+      btn.disabled = true
+      btn.textContent = '领取中…'
+    }
     await grantObtainedReward({
       name: reward.title,
       description: '潘多拉魔盒奖励',
@@ -1173,11 +1330,14 @@ export function initMainHomeView(router) {
     } catch {
       /* ignore */
     }
+    showToast(`已领取：${reward.title}`, { duration: 2400 })
+    window.closePandoraReward()
   }
 
   window.closePandoraReward = () => {
     stopFireworks()
     document.getElementById('pandoraRewardOverlay')?.classList.add('hidden')
+    selectedPandoraRewardIndex = null
     const type = pendingLightPlanetType
     const planet = dashboardData?.planets?.find((p) => p.planet_type === type)
     const maxLevel = Number(planet?.max_level) || 7
@@ -1195,11 +1355,11 @@ export function initMainHomeView(router) {
       }
       setTimeout(() => {
         window.switchTab?.('reward')
-        const btn = document.querySelector(
+        const claimBtn = document.querySelector(
           `#dimensionProgress .dimension-item[data-planet-type="${type}"] .dimension-reward-pack-btn`
         )
-        btn?.classList.add('is-blink', 'is-claimable')
-        btn?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        claimBtn?.classList.add('is-blink', 'is-claimable')
+        claimBtn?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }, 350)
     }
   }
@@ -1662,25 +1822,61 @@ export function initMainHomeView(router) {
 
   const DEFAULT_REWARD_PACK = {
     survival: [
-      { icon: '🎟️', name: '线下训练营200元抵扣券', desc: '完成本期目标可获得' },
-      { icon: '🎓', name: '线上课限时3天体验券', desc: '点亮星球后开启礼包可抽得' },
+      { icon: '🎟️', name: '线下训练营200元抵扣券', desc: '完成本期目标可获得', kind: 'system' },
+      { icon: '🎓', name: '线上课限时3天体验券', desc: '点亮星球后开启礼包可抽得', kind: 'system' },
     ],
     money: [
-      { icon: '🧩', name: '赚钱星球能量碎片 ×1', desc: '完成本期目标可获得' },
-      { icon: '🏕️', name: '线下训练营9折折扣券', desc: '点亮星球后开启礼包可抽得' },
+      { icon: '🧩', name: '赚钱星球能量碎片 ×1', desc: '完成本期目标可获得', kind: 'system' },
+      { icon: '🏕️', name: '线下训练营9折折扣券', desc: '点亮星球后开启礼包可抽得', kind: 'system' },
     ],
     beauty: [
-      { icon: '🧩', name: '好看星球能量碎片 ×1', desc: '完成本期目标可获得' },
-      { icon: '🎓', name: '线上课限时3天体验券', desc: '点亮星球后开启礼包可抽得' },
+      { icon: '🧩', name: '好看星球能量碎片 ×1', desc: '完成本期目标可获得', kind: 'system' },
+      { icon: '🎓', name: '线上课限时3天体验券', desc: '点亮星球后开启礼包可抽得', kind: 'system' },
     ],
     fun: [
-      { icon: '🧩', name: '好玩星球能量碎片 ×1', desc: '完成本期目标可获得' },
-      { icon: '🏕️', name: '线下训练营9折折扣券', desc: '点亮星球后开启礼包可抽得' },
+      { icon: '🧩', name: '好玩星球能量碎片 ×1', desc: '完成本期目标可获得', kind: 'system' },
+      { icon: '🏕️', name: '线下训练营9折折扣券', desc: '点亮星球后开启礼包可抽得', kind: 'system' },
     ],
     flow: [
-      { icon: '🧩', name: '心流星球能量碎片 ×1', desc: '完成本期目标可获得' },
-      { icon: '🎓', name: '线上课限时3天体验券', desc: '点亮星球后开启礼包可抽得' },
+      { icon: '🧩', name: '心流星球能量碎片 ×1', desc: '完成本期目标可获得', kind: 'system' },
+      { icon: '🎓', name: '线上课限时3天体验券', desc: '点亮星球后开启礼包可抽得', kind: 'system' },
     ],
+  }
+
+  // 测试用固定悦己奖励：礼包预览 / 开盒领取均展示
+  const DEMO_SELF_REWARDS = [
+    {
+      icon: '🏝️',
+      name: '周边轻旅度假一次',
+      desc: '测试用悦己奖励 · 计划完成后可领取',
+      tag: '悦己',
+      kind: 'self',
+    },
+  ]
+
+  function getSystemRewardPackItems(type) {
+    return DEFAULT_REWARD_PACK[type] || DEFAULT_REWARD_PACK.survival || []
+  }
+
+  function getSelfRewardPackItems() {
+    const demoNames = new Set(DEMO_SELF_REWARDS.map((r) => r.name))
+    const fromUser = (dashboardData?.rewards || [])
+      .filter((r) => {
+        const name = String(r?.name || '')
+        const desc = String(r?.description || '')
+        if (demoNames.has(name)) return false
+        // 排除系统礼包 / 潘多拉，仅保留悦己类
+        if (/计划完成礼包|潘多拉|能量碎片|体验券|折扣券|抵扣券/.test(`${name}${desc}`)) return false
+        return true
+      })
+      .map((r) => ({
+        icon: '✨',
+        name: r.name,
+        desc: r.description || '悦己奖励',
+        tag: r.status === 'locked' ? '待解锁' : '悦己',
+        kind: 'self',
+      }))
+    return [...DEMO_SELF_REWARDS, ...fromUser]
   }
 
   function escapeRewardText(value) {
@@ -1717,13 +1913,29 @@ export function initMainHomeView(router) {
   function refreshRewardPackCustomList() {
     const customList = document.getElementById('rewardPackCustomList')
     if (!customList) return
-    const custom = (dashboardData?.rewards || []).map((r) => ({
-      icon: '✨',
-      name: r.name,
-      desc: r.description || '悦己奖励',
-      tag: r.status === 'locked' ? '待解锁' : '已解锁',
-    }))
-    customList.innerHTML = renderRewardPackItems(custom, '暂无悦己奖励，可在下方添加')
+    customList.innerHTML = renderRewardPackItems(
+      getSelfRewardPackItems(),
+      '暂无悦己奖励，可在下方添加'
+    )
+  }
+
+  function renderCeremonyRewardItems(items) {
+    if (!items?.length) {
+      return `<li class="plan-pack-reward-empty">暂无</li>`
+    }
+    return items
+      .map(
+        (item) => `
+      <li class="plan-pack-reward-item">
+        <span class="plan-pack-reward-icon" aria-hidden="true">${item.icon || '🎁'}</span>
+        <span class="plan-pack-reward-text">
+          <strong>${escapeRewardText(item.name)}</strong>
+          <small>${escapeRewardText(item.desc || '')}</small>
+        </span>
+        ${item.tag ? `<span class="plan-pack-reward-tag">${escapeRewardText(item.tag)}</span>` : ''}
+      </li>`
+      )
+      .join('')
   }
 
   function buildRewardDescription(desc, condition) {
@@ -1763,49 +1975,171 @@ export function initMainHomeView(router) {
     refreshRewardPackCustomList()
   }
 
-  window.closeRewardPackModal = async () => {
-    const type = activeRewardPackType
+  function isPlanetPlanDone(type) {
+    if (!type) return false
+    if (getPlanPackClaimedSet().has(String(type))) return true
     const planet = dashboardData?.planets?.find((p) => p.planet_type === type)
-    const planDone =
-      Boolean(type) &&
-      (Boolean(dashboardData?.demo_guides?.plan_complete_planets?.includes(type)) ||
-        (planet && Number(planet.level) >= (Number(planet.max_level) || 7)))
-    document.getElementById('rewardPackModalOverlay')?.classList.add('hidden')
-    activeRewardPackType = null
-    // 领完计划完成礼包：写入「我的奖励」，并重新备好点亮引导
-    if (planDone && type) {
-      const packItems = DEFAULT_REWARD_PACK[type] || DEFAULT_REWARD_PACK.survival || []
-      for (const item of packItems) {
+    return (
+      Boolean(dashboardData?.demo_guides?.plan_complete_planets?.includes(type)) ||
+      Boolean(planet && Number(planet.level) >= (Number(planet.max_level) || 7))
+    )
+  }
+
+  function resetPlanPackCeremonyUi() {
+    const card = document.getElementById('planPackCeremonyCard')
+    const box = document.getElementById('planPackBox')
+    const wrap = document.getElementById('planPackRewardWrap')
+    const systemList = document.getElementById('planPackSystemList')
+    const selfList = document.getElementById('planPackSelfList')
+    const openBtn = document.getElementById('planPackOpenBtn')
+    const claimBtn = document.getElementById('planPackClaimBtn')
+    card?.classList.remove('is-opened', 'is-revealed')
+    box?.classList.remove('is-opening', 'is-opened')
+    wrap?.classList.add('hidden')
+    if (systemList) systemList.innerHTML = ''
+    if (selfList) selfList.innerHTML = ''
+    openBtn?.classList.remove('hidden')
+    claimBtn?.classList.add('hidden')
+    if (claimBtn) {
+      claimBtn.disabled = false
+      claimBtn.textContent = '收入我的奖励'
+    }
+    if (openBtn) {
+      openBtn.disabled = false
+      openBtn.textContent = '开启礼包'
+    }
+  }
+
+  function openPlanPackCeremonyModal(type) {
+    activeRewardPackType = type
+    resetPlanPackCeremonyUi()
+    const planetName = PLANET_FRAGMENT_NAME[type] || '闪耀星球'
+    const titleEl = document.getElementById('planPackCeremonyTitle')
+    const descEl = document.getElementById('planPackCeremonyDesc')
+    if (titleEl) titleEl.textContent = `恭喜完成${planetName}计划`
+    if (descEl) {
+      descEl.textContent =
+        '这一程你走完了。专属奖励礼包已备好——点下方开启，礼盒将为你揭晓惊喜。'
+    }
+    document.getElementById('planPackCeremonyOverlay')?.classList.remove('hidden')
+  }
+
+  window.openPlanPackCeremony = () => {
+    const type = activeRewardPackType
+    if (!type) return
+    const box = document.getElementById('planPackBox')
+    const card = document.getElementById('planPackCeremonyCard')
+    const openBtn = document.getElementById('planPackOpenBtn')
+    const claimBtn = document.getElementById('planPackClaimBtn')
+    const wrap = document.getElementById('planPackRewardWrap')
+    const systemList = document.getElementById('planPackSystemList')
+    const selfList = document.getElementById('planPackSelfList')
+    const descEl = document.getElementById('planPackCeremonyDesc')
+    if (openBtn) {
+      openBtn.disabled = true
+      openBtn.textContent = '开启中…'
+    }
+    box?.classList.add('is-opening')
+    card?.classList.add('is-opened')
+    startFireworks('planPackFireworksCanvas')
+    const systemItems = getSystemRewardPackItems(type)
+    const selfItems = getSelfRewardPackItems()
+    setTimeout(() => {
+      box?.classList.add('is-opened')
+      card?.classList.add('is-revealed')
+      if (descEl) descEl.textContent = '礼盒已开启，包含两类奖励：随机小惊喜 + 悦己奖励'
+      if (systemList) systemList.innerHTML = renderCeremonyRewardItems(systemItems)
+      if (selfList) selfList.innerHTML = renderCeremonyRewardItems(selfItems)
+      wrap?.classList.remove('hidden')
+      openBtn?.classList.add('hidden')
+      claimBtn?.classList.remove('hidden')
+    }, 900)
+  }
+
+  window.claimPlanPackCeremony = async () => {
+    const type = activeRewardPackType
+    if (!type) return
+    // 比赛演示：已领取则只关仪式，不重复发奖、不重置进度
+    if (getPlanPackClaimedSet().has(String(type))) {
+      stopFireworks()
+      document.getElementById('planPackCeremonyOverlay')?.classList.add('hidden')
+      resetPlanPackCeremonyUi()
+      activeRewardPackType = null
+      showToast('该星球计划完成礼包已领取')
+      return
+    }
+    const claimBtn = document.getElementById('planPackClaimBtn')
+    if (claimBtn) {
+      claimBtn.disabled = true
+      claimBtn.textContent = '领取中…'
+    }
+    let claimedOk = false
+    try {
+      const systemItems = getSystemRewardPackItems(type)
+      const selfItems = getSelfRewardPackItems()
+      for (const item of systemItems) {
         await grantObtainedReward({
           name: item.name,
           description: `${item.desc || '完成本期目标可获得'} · 计划完成礼包`,
         })
       }
-      try {
-        await api.post('/dev/prep-light-test', null, { params: { planet_type: type } })
-      } catch {
-        /* 非开发环境无该接口时忽略 */
+      for (const item of selfItems) {
+        await grantObtainedReward({
+          name: item.name,
+          description: `${item.desc || '悦己奖励'} · 悦己奖励`,
+        })
       }
+      // 固定演示终点：保持满级 100%，打「已完成」水印（不调 prep-light，避免进度被重置）
+      markPlanPackClaimed(type)
+      claimedOk = true
       await loadDashboard()
-      showToast('奖励已放入「我的奖励」', { duration: 2200 })
+      showToast('礼包已领取，该星球点亮进度保持 100%', { duration: 2600 })
+    } catch (err) {
+      console.warn('领取计划完成礼包失败', err)
+      showToast(err?.response?.data?.detail || '领取遇到问题，请重试')
+      if (claimBtn) {
+        claimBtn.disabled = false
+        claimBtn.textContent = '收入我的奖励'
+      }
+    } finally {
+      stopFireworks()
+      if (claimedOk) {
+        document.getElementById('planPackCeremonyOverlay')?.classList.add('hidden')
+        resetPlanPackCeremonyUi()
+        activeRewardPackType = null
+      }
     }
+  }
+
+  window.closePlanPackCeremony = () => {
+    stopFireworks()
+    document.getElementById('planPackCeremonyOverlay')?.classList.add('hidden')
+    resetPlanPackCeremonyUi()
+    activeRewardPackType = null
+  }
+
+  window.closeRewardPackModal = () => {
+    document.getElementById('rewardPackModalOverlay')?.classList.add('hidden')
+    activeRewardPackType = null
   }
 
   window.viewRewardPack = (type) => {
     activeRewardPackType = type
+    if (getPlanPackClaimedSet().has(String(type))) {
+      showToast('该星球计划完成礼包已领取')
+      return
+    }
+    // 计划已完成：走开盒仪式；未完成：仍看预览配置弹窗
+    if (isPlanetPlanDone(type)) {
+      openPlanPackCeremonyModal(type)
+      return
+    }
     const titleEl = document.getElementById('rewardPackModalTitle')
     const defaultList = document.getElementById('rewardPackDefaultList')
-    const planet = dashboardData?.planets?.find((p) => p.planet_type === type)
-    const planDone =
-      Boolean(dashboardData?.demo_guides?.plan_complete_planets?.includes(type)) ||
-      (planet && Number(planet.level) >= (Number(planet.max_level) || 7))
-
-    if (titleEl) {
-      titleEl.textContent = planDone ? '计划已达成，领取奖励礼包' : '完成即可得奖励礼包'
-    }
+    if (titleEl) titleEl.textContent = '完成即可得奖励礼包'
     if (defaultList) {
       defaultList.innerHTML = renderRewardPackItems(
-        DEFAULT_REWARD_PACK[type] || DEFAULT_REWARD_PACK.survival,
+        getSystemRewardPackItems(type),
         '暂无随机小惊喜'
       )
     }
@@ -2122,8 +2456,7 @@ export function initMainHomeView(router) {
   let companionVoiceSpeak = true
   let companionRecognition = null
   let companionListening = false
-  const userStoreForCompanion = useUserStore()
-  let activeCompanion = getCompanion(userStoreForCompanion.personality)
+  let activeCompanion = { ...ENERGY_PET }
 
   function escapeChatText(value) {
     return String(value || '')
@@ -2133,19 +2466,25 @@ export function initMainHomeView(router) {
       .replace(/"/g, '&quot;')
   }
 
-  function syncCompanionUi(companion) {
-    activeCompanion = companion || getCompanion(userStoreForCompanion.personality)
+  function forceEnergyPetCompanion() {
+    activeCompanion = { ...ENERGY_PET }
+    return activeCompanion
+  }
+
+  function syncCompanionUi() {
+    forceEnergyPetCompanion()
     const nameEl = document.getElementById('companionHeaderName')
-    const descEl = document.getElementById('companionHeaderDesc')
     const headerAvatar = document.getElementById('companionHeaderAvatar')
     const greetingAvatar = document.getElementById('companionGreetingAvatar')
     const greetingBubble = document.getElementById('companionGreetingBubble')
-    if (nameEl) nameEl.textContent = activeCompanion.display
-    if (descEl) descEl.textContent = `${activeCompanion.title} · 文字或语音陪你聊`
-    if (headerAvatar) headerAvatar.src = activeCompanion.avatar
-    if (greetingAvatar) greetingAvatar.src = activeCompanion.avatar
+    if (nameEl) nameEl.textContent = ENERGY_PET.display
+    if (headerAvatar) {
+      headerAvatar.src = ENERGY_PET.avatar
+      headerAvatar.alt = ENERGY_PET.display
+    }
+    if (greetingAvatar) greetingAvatar.src = ENERGY_PET.avatar
     if (greetingBubble && energyChatHistory.length === 0) {
-      greetingBubble.textContent = activeCompanion.greeting
+      greetingBubble.textContent = ENERGY_PET.greeting
     }
     const toggle = document.getElementById('companionVoiceToggle')
     if (toggle) {
@@ -2158,7 +2497,7 @@ export function initMainHomeView(router) {
 
   function companionAvatarHtml(role) {
     if (role === 'user') return '<div class="energy-chat-avatar">🙂</div>'
-    return `<div class="energy-chat-avatar companion-avatar-img"><img src="${escapeChatText(activeCompanion.avatar)}" alt=""></div>`
+    return `<div class="energy-chat-avatar companion-avatar-img"><img src="${escapeChatText(ENERGY_PET.avatar)}" alt="${escapeChatText(ENERGY_PET.display)}"></div>`
   }
 
   function appendEnergyChatMessage(role, content, extraClass = '') {
@@ -2179,28 +2518,15 @@ export function initMainHomeView(router) {
     speakCompanionText(text)
   }
 
-  syncCompanionUi(activeCompanion)
-  api
-    .get('/energy/companion')
-    .then(({ data }) => {
-      if (!data) return
-      activeCompanion = {
-        ...getCompanion(data.personality),
-        name: data.name || activeCompanion.name,
-        title: data.title || activeCompanion.title,
-        display: data.display || activeCompanion.display,
-        avatar: data.avatar || activeCompanion.avatar,
-        greeting: data.greeting || activeCompanion.greeting,
-      }
-      syncCompanionUi(activeCompanion)
-    })
-    .catch(() => {})
+  syncCompanionUi()
+  // 仍请求接口做连通性检查，但展示一律锁定星喵人，避免旧后端/五行人格覆盖
+  api.get('/energy/companion').then(() => syncCompanionUi()).catch(() => syncCompanionUi())
 
   window.toggleCompanionVoiceSpeak = () => {
     companionVoiceSpeak = !companionVoiceSpeak
     if (!companionVoiceSpeak) stopCompanionSpeech()
-    syncCompanionUi(activeCompanion)
-    showToast(companionVoiceSpeak ? '已开启伙伴朗读' : '已关闭伙伴朗读')
+    syncCompanionUi()
+    showToast(companionVoiceSpeak ? '已开启星宠朗读' : '已关闭星宠朗读')
   }
 
   window.toggleCompanionVoiceInput = () => {
@@ -2239,7 +2565,7 @@ export function initMainHomeView(router) {
       onResult: (text) => {
         const input = document.getElementById('energyChatInput')
         if (input) input.value = text
-        if (hint) hint.textContent = '听清了，正在请伙伴回答…'
+        if (hint) hint.textContent = '听清了，正在请星喵人回答…'
         window.sendEnergyChat()
       },
     })
@@ -2274,9 +2600,10 @@ export function initMainHomeView(router) {
     if (sendBtn) sendBtn.disabled = true
     appendEnergyChatMessage('user', message)
 
+    forceEnergyPetCompanion()
     const typing = appendEnergyChatMessage(
       'assistant',
-      `${activeCompanion.name}正在想怎么说…`,
+      `${ENERGY_PET.name}正在想怎么说…`,
       'is-typing-row'
     )
     const bubble = typing?.querySelector('.energy-chat-bubble')
@@ -2291,17 +2618,10 @@ export function initMainHomeView(router) {
         },
         { timeout: 60000 }
       )
-      if (data?.companion_display || data?.companion_avatar) {
-        activeCompanion = {
-          ...activeCompanion,
-          name: data.companion_name || activeCompanion.name,
-          display: data.companion_display || activeCompanion.display,
-          avatar: data.companion_avatar || activeCompanion.avatar,
-        }
-        syncCompanionUi(activeCompanion)
-      }
+      // 对话接口不再允许用五行人格覆盖星喵人
+      syncCompanionUi()
       const reply =
-        data?.reply || `我是${activeCompanion.name}，在这儿陪着你，可以再具体说说。`
+        data?.reply || `我是${ENERGY_PET.name}，在这儿陪着你，可以再具体说说。`
       if (typing) typing.remove()
       appendEnergyChatMessage('assistant', reply)
       energyChatHistory.push({ role: 'user', content: message })
@@ -2311,7 +2631,7 @@ export function initMainHomeView(router) {
       if (typing) typing.remove()
       const fail =
         err.response?.data?.detail ||
-        `${activeCompanion.name}这会儿信号有点弱，稍后再聊好吗？`
+        `${ENERGY_PET.name}这会儿信号有点弱，稍后再聊好吗？`
       appendEnergyChatMessage('assistant', fail)
     } finally {
       if (sendBtn) sendBtn.disabled = false
@@ -2418,6 +2738,8 @@ export function initMainHomeView(router) {
     'closeDailySummary',
     'lightPlanetNow',
     'openPandoraNow',
+    'selectPandoraReward',
+    'claimSelectedPandoraReward',
     'closePandoraReward',
     'openReflectionInput',
     'closeReflectionModal',
@@ -2449,6 +2771,9 @@ export function initMainHomeView(router) {
     'abandonTimeGoal',
     'viewRewardPack',
     'closeRewardPackModal',
+    'openPlanPackCeremony',
+    'claimPlanPackCeremony',
+    'closePlanPackCeremony',
     'addPackReward',
     'syncPackRewardConditionUi',
     'openShopPick',
