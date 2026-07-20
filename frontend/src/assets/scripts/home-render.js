@@ -1207,12 +1207,26 @@ export function renderWeekendReview(review) {
   const titleEl = document.getElementById('weekendReviewTitle')
   const btn = document.getElementById('weekendReviewBtn')
   const lockTag = document.getElementById('weekendReviewLockTag')
+  const count = Number(review.week_completions) || 0
+  const streakDays = Number(review.current_streak) || 0
+  const weekLabel = String(review.week_label || '').trim()
+  const isCurrent = review.period === 'current'
+  const periodPrefix = isCurrent
+    ? weekLabel
+      ? `本周（${weekLabel}）`
+      : '本周'
+    : weekLabel
+      ? `上周（${weekLabel}）`
+      : '上周'
+  const message = isCurrent
+    ? `${periodPrefix}已完成${count}个行动，连续保持行动完成${streakDays}天。本周复盘已解锁，欢迎查看；`
+    : `${periodPrefix}已完成${count}个行动，连续保持行动完成${streakDays}天。本周复盘将在周日解锁，敬请期待；`
 
   if (titleEl) {
-    titleEl.textContent = review.period === 'current' ? '周行动回顾 · 本周' : '周行动回顾 · 上周'
+    titleEl.textContent = isCurrent ? '周行动回顾 · 本周' : '周行动回顾 · 上周'
   }
-  text.textContent = review.message
-  if (btn) btn.textContent = review.button_label || (review.period === 'current' ? '查看本周行动回顾' : '查看上周行动回顾')
+  text.textContent = message
+  if (btn) btn.textContent = review.button_label || (isCurrent ? '查看本周行动回顾' : '查看上周行动回顾')
   if (lockTag) {
     lockTag.classList.toggle('hidden', !review.current_week_locked)
   }

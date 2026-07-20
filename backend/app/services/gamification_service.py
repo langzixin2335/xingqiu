@@ -278,12 +278,12 @@ def get_weekend_review(db: Session, user_id: int) -> dict | None:
 
     if is_sunday:
         message = (
-            f"本周（{week_label}）已完成{count}个行动，连续保持行动{streak_days}天。"
+            f"本周（{week_label}）已完成{count}个行动，连续保持行动完成{streak_days}天。"
             f"本周复盘已解锁，欢迎查看；"
         )
     else:
         message = (
-            f"上周（{week_label}）已完成{count}个行动，连续保持行动{streak_days}天。"
+            f"上周（{week_label}）已完成{count}个行动，连续保持行动完成{streak_days}天。"
             f"本周复盘将在周日解锁，敬请期待；"
         )
 
